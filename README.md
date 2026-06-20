@@ -1,171 +1,190 @@
-# AI-Enabled Loan Application Mobile App
+# 🚀 AI-Enabled Digital Loan Application & Decisioning Platform
 
-An educational Android project that demonstrates how AI can be integrated into a loan-application journey.
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9-purple.svg?style=flat-square&logo=kotlin)](https://kotlinlang.org/)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-1.6-blue.svg?style=flat-square&logo=android)](https://developer.android.com/compose)
+[![Python](https://img.shields.io/badge/Python-3.10-blue.svg?style=flat-square&logo=python)](https://www.python.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-v32.8-orange.svg?style=flat-square&logo=firebase)](https://firebase.google.com/)
+[![Appwrite](https://img.shields.io/badge/Appwrite-v7.0-red.svg?style=flat-square&logo=appwrite)](https://appwrite.io/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
-This project shows how a mobile loan app can combine:
+An educational reference project demonstrating a modern, end-to-end digital lending journey. It integrates guided user onboarding, automated PAN verification, bureau credit-score lookup, on-device OCR, AI-assisted financial document extraction, a rule-based Business Rules Engine (BRE), and OTP-based email workflows.
 
-- guided user onboarding
-- PAN and bureau-data retrieval
-- document upload and OCR
-- AI-assisted document understanding
-- obligation review
-- rule-based loan-offer calculation
-- OTP and email-based verification workflows
+This repository serves as a learning sandbox for developers exploring mobile-to-backend designs, rule engines, document classification, and AI/LLM structured text extraction inside a financial context.
 
-The goal of this repository is learning, experimentation, and hands-on understanding of how AI and backend services can support a digital lending flow. It is not financial, legal, underwriting, or production-compliance advice.
+---
 
-## Purpose
+## 🏛️ System Architecture & Workflow
 
-This project was built to explore questions like:
+The platform consists of a native Android application interacting with specialized cloud and backend systems to orchestrate the loan lifecycle:
 
-- how can AI help extract structured information from financial documents?
-- how can a mobile app combine bureau data, user-declared data, and verified document data?
-- how can a backend decision engine turn that information into a loan decision and indicative offer?
-- how can services like Firebase, Appwrite, and email verification be connected inside a single product flow?
-
-## What The App Does
-
-The Android app walks a user through a loan-application experience that includes:
-
-- sign-in and OTP-based verification
-- PAN verification and bureau-data lookup
-- personal and employment information capture
-- document upload for salary slips, bank statements, and ITR
-- OCR and AI-assisted extraction of structured fields from uploaded documents
-- tradeline and EMI confirmation
-- rule-based loan-offer generation
-- final offer display and summary
-
-## Key Features
-
-### 1. AI-assisted document journey
-
-- OCR using on-device text recognition
-- AI-assisted extraction for salary slips, bank statements, ITR, PAN, and ID documents
-- structured document outputs saved for downstream processing
-
-### 2. Bureau-data integration
-
-- Appwrite-backed bureau collections
-- borrower summary, enquiries, and tradelines support
-- bureau-based credit-score and obligation inputs in the loan flow
-
-### 3. Loan decision engine
-
-- direct Business Rules Engine (BRE) integration over HTTP
-- rule-based decision output such as `AUTO_APPROVED`, `REJECTED`, or `REFER_TO_UNDERWRITER`
-- indicative loan amount, tenure, and pricing outputs
-
-### 4. Firebase-backed mobile backend
-
-- Firestore for application and process state
-- Storage for uploaded documents
-- Functions for OTP and email workflows
-- Crashlytics and analytics support
-
-### 5. Email verification support
-
-- OTP/email workflows through Firebase Functions
-- Brevo-based transactional email sending
-
-## Tech Stack
-
-### Mobile app
-
-- Kotlin
-- Jetpack Compose
-- Hilt
-- Retrofit / OkHttp
-- Firebase Android SDK
-- ML Kit OCR
-- WorkManager
-- Appwrite Android SDK
-
-### Backend services
-
-- Firebase / Firestore / Storage / Functions
-- Appwrite
-- Python Flask BRE service
-- Brevo email API
-
-### AI integration
-
-- Gemini API integration in the Android app
-- OpenAI client dependencies present for experimentation and future extension
-
-## Repository Structure
-
-```text
-apps/
-  mobile-android/
-services/
-  bre-python/
-  appwrite-admin-tools/
-  firebase-support/
-docs/
-  architecture/
-  setup/
-  migration/
-  reference/
+```mermaid
+graph TD
+    subgraph "Client Layer (Mobile App)"
+        Android["Android Mobile App (Kotlin/Compose)"]
+        OCR["ML Kit OCR (On-Device Text Parsing)"]
+        Android -.->|"Local Text Extraction"| OCR
+    end
+    
+    subgraph "Backend Services Layer"
+        Firebase["Firebase Suite (Auth, Firestore, Storage, Cloud Functions)"]
+        Appwrite["Appwrite (Mock Credit Bureau Databases)"]
+        BRE["Python BRE Service (Direct Risk Decisions)"]
+    end
+    
+    subgraph "External Communications"
+        Brevo["Brevo API (SMTP Email Verification)"]
+    end
+    
+    Android -->|"Reads/writes application & doc state"| Firebase
+    Android -->|"Fetches bureau profiles & tradelines"| Appwrite
+    Android -->|"Direct POST /calculate-offer"| BRE
+    Firebase -->|"Invokes Email OTP & Drop-off Alerts"| Brevo
 ```
 
-## Main Components
+### 🔁 Application Onboarding & Decision Lifecycle
 
-### `apps/mobile-android`
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Applicant
+    participant App as Android Mobile App
+    participant FB as Firebase Services
+    participant AW as Appwrite Bureau DB
+    participant BRE as Python BRE Engine
 
-The Android application.
+    User->>App: Sign-in via Email
+    App->>FB: Generate OTP (Cloud Function)
+    FB->>User: Email Verification OTP (via Brevo)
+    User->>App: Input OTP to Authenticate
+    App->>App: Onboard & Personal Info
+    User->>App: Input PAN Identifier
+    App->>AW: Fetch Credit Score & Tradelines
+    AW-->>App: Return Bureau Profile
+    User->>App: Upload Financial Docs (Salary slip, Bank statement)
+    App->>App: Run OCR & Extract Structured Fields (Gemini API)
+    User->>App: Confirm Obligations & EMIs
+    App->>BRE: POST /calculate-offer (Application JSON)
+    Note over BRE: Evaluate Income, Score, & Debt-to-Income Rules
+    BRE-->>App: Decision (APPROVED/REJECTED) & Offer Options
+    App->>User: Display Indicative Loan Offer & Key Fact Sheet
+```
 
-### `services/bre-python`
+---
 
-The direct rule engine used to calculate loan decisions and indicative loan offers.
+## 📁 Repository Directory Structure
 
-### `services/appwrite-admin-tools`
+```text
+loansai-root/
+│
+├── apps/
+│   └── mobile-android/         # Kotlin Android Application (Jetpack Compose, Hilt, Retrofit)
+│
+├── services/
+│   ├── bre-python/             # Flask Rule Engine Service (python-based rule evaluator)
+│   ├── appwrite-admin-tools/   # Node.js setups and script loaders for bureau credit profiles
+│   └── firebase-support/       # Cloud Functions (ver 4) & Firebase Firestore clean-up tools
+│
+├── docs/                       # Configuration, Migration details & Setup guides
+│   ├── setup/                  # Step-by-step developer setup guides
+│   ├── migration/              # Repository cleanup baseline and rules audit
+│   └── reference/              # Historical architecture guides and API catalogs
+│
+├── AGENTS.md                   # AI Developer configuration, active codebase limits & context rules
+└── README.md                   # Root Documentation (this file)
+```
 
-Scripts and notes for setting up the Appwrite database used for bureau data.
+> [!NOTE]
+> There is a TS reference file [backend-llm-functions.ts](file:///media/Adata_Data/Loan_App_Project/git_repo/apps/mobile-android/app/src/main/java/com/loansai/unassisted/backend-llm-functions.ts) located inside the Android project package tree. This serves as historical reference code for Firebase Cloud Functions and does not affect compiler packaging as the Gradle Kotlin build ignores TypeScript.
 
-### `services/firebase-support`
+---
 
-Firebase Functions and helper scripts used for backend support tasks such as OTP and data operations.
+## 💻 Component Summary
 
-## Setup Guides
+### 📱 1. Mobile Android App (`apps/mobile-android`)
+A modern Jetpack Compose application following Clean Architecture principles (MVVM, Usecases, Repositories).
+*   **Networking**: Retrofit & OkHttp interface with Firebase Cloud Run backend APIs.
+*   **Local Storage**: DataStore Preferences for user caching and session variables.
+*   **Security**: Integrates Play Services Integrity and standard Auth Interceptors.
+*   **AI Integrations**: Uses Gemini Android SDK directly to analyze OCR text from uploaded documents (Salary slips, Bank statements, ITR) and map them to structured JSON payloads.
 
-Detailed setup instructions are here:
+### 🐍 2. Python BRE Service (`services/bre-python`)
+A lightweight Python Flask microservice serving as the core underwriting decision engine.
+*   Determines application eligibility using metrics like FOIR (Fixed Obligation to Income Ratio) and CIBIL score.
+*   Outputs standard underwriting outcomes (`AUTO_APPROVED`, `REJECTED`, or `REFER_TO_UNDERWRITER`).
+*   Calculates indicative credit limits, pricing, and maximum eligible tenures.
 
-- [Mobile App Setup](./docs/setup/mobile-android.md)
-- [Firebase Backend Setup](./docs/setup/firebase-backend.md)
-- [BRE Service Setup](./docs/setup/bre-python.md)
-- [Appwrite Setup](./docs/setup/appwrite-admin-tools.md)
-- [Email Verification Setup](./docs/setup/email-verification.md)
-- [Build And Install APK](./docs/setup/build-and-install.md)
+### ⚖️ 3. Appwrite Admin Tools (`services/appwrite-admin-tools`)
+Admin scripts used to pre-provision mock bureau and credit scoring collections in an Appwrite Database.
+*   [setup-appwrite-collections.js](file:///media/Adata_Data/Loan_App_Project/git_repo/services/appwrite-admin-tools/setup-appwrite-collections.js) automatically sets up collections for `borrower_summary`, `enquiries`, and `tradelines` with proper attributes and keys.
+*   [upload-report.js](file:///media/Adata_Data/Loan_App_Project/git_repo/services/appwrite-admin-tools/upload-report.js) uploads normalized mock borrower data (such as [geeta_cibil_report.json](file:///media/Adata_Data/Loan_App_Project/git_repo/services/appwrite-admin-tools/geeta_cibil_report.json)).
 
-## High-Level Setup Order
+### 🔥 4. Firebase Backend Support (`services/firebase-support`)
+Firebase Functions and helper tools written in TypeScript to manage backend workflow operations.
+*   Orchestrates OTP generation, expiration timelines, and verification checks.
+*   Sends transactional system emails (SMTP) through Brevo API integration.
+*   Includes developer scripts to download or flush Firestore databases during debugging.
 
-If you want to run the full project, use this order:
+---
 
-1. Create Firebase project and mobile app config
-2. Set up Appwrite database and bureau collections
-3. Deploy or run the BRE service
-4. Configure Firebase Functions for OTP/email flows
-5. Configure AI keys for document/assistant features
-6. Build the Android APK and install it
+## 🛠️ Installation & Setup Guides
 
-## Educational Notes
+To run the complete workflow, refer to these detailed setup manuals in order:
 
-This repository is intentionally useful for learners who want to understand:
+1.  **[Firebase Backend Setup](./docs/setup/firebase-backend.md)**: Initialize your Firestore, Storage, and Cloud Functions configurations.
+2.  **[Appwrite Database Setup](./docs/setup/appwrite-admin-tools.md)**: Configure API keys, spin up collections, and import mock CIBIL reports.
+3.  **[BRE python Service Setup](./docs/setup/bre-python.md)**: Run the python underwriting service locally or containerize via Docker.
+4.  **[Email Integration Guide](./docs/setup/email-verification.md)**: Connect Brevo SMTP details for OTP capabilities.
+5.  **[Android Application Setup](./docs/setup/mobile-android.md)**: Import the client codebase, link Gradle dependencies, and configure compile variables.
+6.  **[APK Build & Install Guide](./docs/setup/build-and-install.md)**: Compile the application and test on emulator/physical device.
 
-- mobile-to-backend workflow design
-- AI integration inside a user journey
-- combining OCR, structured extraction, rules, and backend services
-- how multiple systems can support a lending-style product flow
+---
 
-## Before You Publish Or Demo
+## 🔑 Configuration & Safe Secrets Setup
 
-Review:
+Because this codebase is tailored for public distribution, **all local credential files, keystores, and private settings are excluded from Git** (managed via `.gitignore`). You must manually configure these values for local development.
 
-- hardcoded endpoints
-- project IDs
-- Appwrite IDs
-- Firebase configuration files
-- API keys and email provider credentials
+### 1. Android Configurations
+Create a `keystore.properties` file in `apps/mobile-android/keystore.properties` to map external API keys:
+```properties
+# apps/mobile-android/keystore.properties
+openai_api_key=YOUR_OPENAI_API_KEY
+gemini_api_key=YOUR_GEMINI_API_KEY
+brevo_api_key=YOUR_BREVO_SMTP_API_KEY
 
-This repo excludes major local secret files, but you should still do a final secret and environment review before public release or deployment.
+# Optional release signing configs
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyAlias=YOUR_ALIAS
+keyPassword=YOUR_ALIAS_PASSWORD
+```
+Download and place your Firebase `google-services.json` at:
+```text
+apps/mobile-android/app/google-services.json
+```
+
+### 2. Service Configurations
+Configure a local `.env` file for Appwrite admin tools:
+```env
+# services/appwrite-admin-tools/.env
+APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
+APPWRITE_PROJECT_ID=your-project-id
+APPWRITE_API_KEY=your-admin-api-key
+APPWRITE_DATABASE_ID=your-database-id
+```
+
+---
+
+## ⚠️ Security Notice & Publishing Checklist
+
+Before executing a production deployment, demo, or public release, ensure you review the following publish items:
+
+*   **API Credentials**: Never commit keystores, `.env` files, or service account JSON credentials to version control.
+*   **Infrastructure Endpoints**: Review hardcoded endpoints inside the development baseline:
+    *   **Cloud Run Base APIs**: Set in [ApiConstants.kt](file:///media/Adata_Data/Loan_App_Project/git_repo/apps/mobile-android/app/src/main/java/com/loansai/unassisted/util/constants/ApiConstants.kt#L9-L14)
+    *   **Direct BRE Endpoint**: Defined in [NetworkModule.kt](file:///media/Adata_Data/Loan_App_Project/git_repo/apps/mobile-android/app/src/main/java/com/loansai/unassisted/data/local/database/di/NetworkModule.kt#L288)
+    *   **Appwrite Database ID**: Defined in [ApiConstants.kt](file:///media/Adata_Data/Loan_App_Project/git_repo/apps/mobile-android/app/src/main/java/com/loansai/unassisted/util/constants/ApiConstants.kt#L62) and [PANRepositoryImpl.kt](file:///media/Adata_Data/Loan_App_Project/git_repo/apps/mobile-android/app/src/main/java/com/loansai/unassisted/data/repository/PANRepositoryImpl.kt#L79)
+*   **Camunda Code**: Active flows do not depend on Camunda orchestrations. Dormant classes are retained purely as reference layout.
+
+---
+
+## 📄 License
+This project is released under the **MIT License**. Check out `LICENSE` for further details.
