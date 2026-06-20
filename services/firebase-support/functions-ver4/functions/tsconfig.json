@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "module": "commonjs",
+      "noImplicitReturns": true,
+      "noUnusedLocals": true,
+      "outDir": "lib",
+      "sourceMap": true,
+      "strict": true,
+      "target": "es2017", // Or newer like "es2020"
+      "skipLibCheck": true, // Often useful with Firebase/Google libraries
+      "esModuleInterop": true // Recommended for compatibility
+    },
+    "compileOnSave": true,
+    "include": [
+      "src"
+    ]
+  }

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- LinkedIn blue background -->
+    <path
+        android:fillColor="#0A66C2"
+        android:pathData="M0,0h24v24H0z"/>
+    <!-- White “in” letters -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M6.94,8.5H4v11h2.94v-11zM5.47,6.5c0.97,0,1.75-0.79,1.75-1.75S6.44,3,5.47,3 3.72,3.79,3.72,4.75 4.5,6.5,5.47,6.5zM13.06,12.06c-1.04,0-1.5,0.56-1.75,0.94v-0.81H8.37v6.31h2.94v-3.53c0-0.88,0.16-1.75,1.31-1.75 1.16,0,1.16,1.04,1.16,1.82v3.46h2.94v-3.78c0-1.84-0.4-3.28-2.94-3.28z"/>
+</vector>

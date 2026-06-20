@@ -1,0 +1,49 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Android / Gradle
+.gradle/
+local.properties
+captures/
+build/
+*/build/
+*.apk
+*.aab
+*.ap_
+*.keystore
+*.jks
+keystore.properties
+
+# Kotlin / Java
+.kotlin/
+*.class
+*.log
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Firebase / GCP / Appwrite secrets
+google-services.json
+serviceAccountKey.json
+service-account.json
+.env
+keys.txt
+
+# Archives / notebooks / temp
+*.zip
+*.7z
+*.ipynb
+.ipynb_checkpoints/
+tmp/

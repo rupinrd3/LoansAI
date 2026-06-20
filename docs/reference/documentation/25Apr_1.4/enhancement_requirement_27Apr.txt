@@ -1,0 +1,115 @@
+
+ Bureau Data Confirmation & Obligation Refinement:
+A new screen (BureauConfirmationScreen.kt) SHALL be created and integrated into the navigation graph (AppNavGraph.kt).
+Navigation to this screen SHALL occur only from the Document Upload screen (LoanOfferScreen.kt) if and only if Bureau data report was successfully fetched from the Appwrite database and bureau score was a valid non zero score. 
+The screen MUST fetch and display only those tradelines where account status is OPEN / LIVE from the previously fetched Appwrite bureau data (cached/stored against the applications record). Displayed fields SHALL include at least: Lender Name, Product Type, Sanction Amount, Current Balance.
+The UI MUST dynamically display these tradelines using a scrollable list (e.g., LazyColumn) capable of handling up to 15 items.
+Each tradeline item MUST include a Numerical Field allowing the user to input the current EMI they are paying for that specific loan. Input validation should ensure numeric values.0 is a valid value but null is not a valid value. on detecting invalid values, the screen must highlight the required null field with red border (similar to what is done in other screens where mandatory information is required.) 
+A multi-line TextField MUST be provided at the bottom of the screen for users to enter comments explaining why certain loans might be closed, inaccurate, or should not be considered in obligation calculations. A question should be asked and placed above this text field in this regard. 
+A "Submit" button SHALL trigger the collection of all user-entered EMIs and comments, storing them in the applications.bureauConfirmationInput map in Firestore, and then initiate the LLM call for obligation recalculation (original calculation was the declared emi in employment details screen).
+This screen will be skipped by the app if the bureau report data has not been fetched from the appwrite server or the api call has failed when the customer completes the documents upload screen. 
+This requirement introduces a dynamic workflow in the app. ensure that the app overall functionality is not broken by implementing this feature. 
+
+
+LLM Integration & Agentic AI Enhancements for bureau data:
+●After the user submits the Bureau Data Confirmation screen, the Android app SHALL directly call the designated LLM Service.LLM service in this case is Gemini 2.0 flash model. model value should be configurable.  
+●The app MUST provide the LLM with: relevant tradelines data from the fetched bureau report (lender, product, balance, account status) and the userProvidedEmis and userComments collected on the screen for each tradeline.
+●The LLM's task is to process this input, considering the user's EMI figures and comments (e.g., "ignore loan X as it's closedor its closing in next 30 days"), and return a structured JSON response containing: recalculatedObligation (the revised total monthly obligation amount) and excludedLoans (a list of tradelines excluded based on comments with reasons).
+●The app MUST parse this JSON response and use the recalculatedObligation value as input for the 2nd BRE pass.
+●a new sub collection or a collection will be created in the firestore database which will capture the user inputs for the emi values, user comments, llm recalculatedObligation field. 
+
+
+Enhancements to the Document Upload Screen
+
+the document upload screen gives the user options for uploading 4 types of document:Bank Statement, Salary Slip, Income Tax Return, Form 26AS. 
+the user has 3 mediums of uploading a document, camera capture, image upload and pdf document upload. 
+
+I want to use the LLM service to process the documents and give structured data as detailed in the data catalog fields. 
+
+for camera capture and image upload, we will use the on device AI to convert the image into text. This converted text will be sent along with metadata and specific instructions to the LLM to process the information and give data in structured output. 
+
+for pdf documents, the app will directly send the document to the LLM service along with specific instructionsto process the information and give data in structured output. 
+
+the output data format from the llm service will remain the same whether it is an image or pdf. the llm processed data fields will be added to the firestore database in the appropriate collection. the data should be linked with the application id in any case. all llm output fields will be tagged as optional irrespective of what is written in the data catalog. 
+
+the app will initiate separate api calls for each document and they will be done in parallel. the document upload screen ui will show a status update for each document below the current screen elements for data upload. when the api has been called and the llm output is yet to be received, a green animated rotating circle or something similar will be shown. if the llm passes a valid json output then a gree tick mark will be shown against the document. if the llm api fails, llm is not able to give successful json output or if there is a timeout then a red cross sign will be shown. This visualisation and status update will be shown for each document where the customer has submitted a document. 
+it is natural that the customer can upload only one document at a time and he will take few seconds to minutes to upload the next document if any. you need to think on what should be the UI design and what should be shown on the screen and when - covering such scenarios as well. 
+
+it is possible that all documents processing can fail, all can pass or some may pass and some may fail. the customer will be allowed to move ahead in any case. 
+let the llm api calls be asynchronous. 
+
+
+
+
+ 
+Enhancements to the Key fact Sheet Screen
+
+the screen should additional details based on the optional data received by the app. these are 
+
+Bank Statement data - bankName, accountNumber, averageBalance
+Salary Slip data  - employerNameOnSlip, employeeNameOnSlip, grossSalary, netSalary
+Income Tax Return data  - assessmentYear, panOnItr, taxableIncome
+Form 26AS  data - panOn26AS, assessmentYear26AS, totalTaxPaid
+Bureau Report Data - bureauType, creditScore, totalAccounts, openAccounts
+
+the app should ensure that all the above mentioned fields are already stored in the firestore database for the give loan application id. 
+
+##### Data Catalog Updates
+all fields mentioned below are optional. 
+
+#### Bank Statement Extraction (DocumentType.BANK_STATEMENT)
+
+| Field Name | Description | Data Type | Source | Required | Notes |
+|------------|-------------|-----------|--------|----------|-------|
+| bankName | Name of the bank | String | OCR/PDF Extraction | Yes | |
+| accountNumber | Bank account number | String | OCR/PDF Extraction | Yes | Usually masked XX1234 |
+| accountHolderName | Name of account holder | String | OCR/PDF Extraction | Yes | |
+| statementPeriodStart | Start date of statement | LocalDate | OCR/PDF Extraction | Yes | |
+| statementPeriodEnd | End date of statement | LocalDate | OCR/PDF Extraction | Yes | |
+| openingBalance | Opening balance | Double | OCR/PDF Extraction | Yes | |
+| closingBalance | Closing balance | Double | OCR/PDF Extraction | Yes | |
+| averageBalance | Average monthly balance | Double | OCR/PDF Extraction | Yes | |
+| totalCredits | Total credit amount | Double | OCR/PDF Extraction | Yes | |
+| totalDebits | Total debit amount | Double | OCR/PDF Extraction | Yes | |
+| transactions | Count of transactions | List<Transaction> | OCR/PDF Extraction | No | |
+
+
+#### Salary Slip Extraction (DocumentType.SALARY_SLIP)
+
+| Field Name | Description | Data Type | Source | Required | Notes |
+|------------|-------------|-----------|--------|----------|-------|
+| employerNameOnSlip | Employer name on slip | String | OCR | Yes | For verification |
+| employeeNameOnSlip | Employee name on slip | String | OCR | Yes | For verification |
+| employeeIdOnSlip | Employee ID on slip | String | OCR | No | |
+| salaryMonth | Month of salary | String | OCR | Yes | |
+| salaryYear | Year of salary | Int | OCR | Yes | |
+| basicSalary | Basic salary component | Double | OCR | Yes | |
+| netSalary | Net salary | Double | OCR | Yes | Key for loan eligibility |
+
+#### Income Tax Return Extraction (DocumentType.INCOME_TAX_RETURN)
+
+| Field Name | Description | Data Type | Source | Required | Notes |
+|------------|-------------|-----------|--------|----------|-------|
+| itrType | ITR form type | String | OCR/PDF Extraction | Yes | (ITR-1, ITR-2, etc.) |
+| assessmentYear | Assessment year | String | OCR/PDF Extraction | Yes | |
+| panOnItr | PAN on ITR | String | OCR/PDF Extraction | Yes | For verification |
+| nameOnItr | Name on ITR | String | OCR/PDF Extraction | Yes | For verification |
+| incomeFromSalary | Salary income | Double | OCR/PDF Extraction | No | |
+| incomeBusiness | Business income | Double | OCR/PDF Extraction | No | |
+| incomeOther | Other income | Double | OCR/PDF Extraction | No | |
+| totalGrossIncome | Total gross income | Double | OCR/PDF Extraction | Yes | |
+| totalDeductions | Total deductions | Double | OCR/PDF Extraction | Yes | |
+| taxableIncome | Taxable income | Double | OCR/PDF Extraction | Yes | |
+| taxPaid | Total tax paid | Double | OCR/PDF Extraction | Yes | |
+| verificationNumber | Verification number | String | OCR/PDF Extraction | No | For verification |
+
+#### Form 26AS Extraction (DocumentType.FORM_26AS)
+
+| Field Name | Description | Data Type | Source | Required | Notes |
+|------------|-------------|-----------|--------|----------|-------|
+| panOn26AS | PAN on 26AS | String | OCR/PDF Extraction | Yes | For verification |
+| nameOn26AS | Name on 26AS | String | OCR/PDF Extraction | Yes | For verification |
+| assessmentYear26AS | Assessment year | String | OCR/PDF Extraction | Yes | |
+| tdsDeductors | List of TDS deductors | List<TdsDeductor> | OCR/PDF Extraction | No | |
+| totalTdsAmount | Total TDS amount | Double | OCR/PDF Extraction | Yes | |
+| totalTaxPaid | Total tax paid | Double | OCR/PDF Extraction | Yes | |

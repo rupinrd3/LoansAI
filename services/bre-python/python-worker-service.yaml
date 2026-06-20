@@ -1,0 +1,16 @@
+# python-worker-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-bre-worker-service
+  namespace: camunda
+  labels:
+    app: python-bre
+spec:
+  type: ClusterIP
+  selector:
+    app: python-bre
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080 # Forwards service port 80 to container port 8080

@@ -1,0 +1,30 @@
+flowchart TB
+    User["User Device"]-->|Interacts|App
+    
+    App["Android App"]-->|Auth|Auth
+    App-->|Store/Retrieve Data|Firestore
+    App-->|Store Metadata|Firestore
+    App-->|Store/Retrieve Docs|Storage
+    App-->|Verify PAN|PAN
+    App-->|Start BRE Process|Camunda
+    App-->|Send Events|Functions
+    
+    Auth["Firebase Auth"]
+    Firestore["Firestore DB"]
+    Storage["Firebase Storage"]
+    Functions["Firebase Cloud Functions"]
+    
+    Camunda["Camunda Engine"]-->|Request Bureau Data|Appwrite
+    Camunda-->|Single-Pass Task|BRE
+    BRE["Python BRE Worker"]-->|Decision Result|Camunda
+    Camunda-->|Update Status|Firestore
+    
+    Functions-->|Monitor Inactivity|Firestore
+    Functions-->|Drop-off Analysis|LLM
+    Functions-->|Send Drop-off Summary|Email
+    Functions-->|Update Status|Firestore
+    
+    Appwrite["Appwrite Bureau DB"]
+    LLM["LLM Service (Gemini/OpenAI)"]
+    Email["Email Service (Brevo)"]
+    PAN["PAN Verification API"]

@@ -1,0 +1,105 @@
+erDiagram
+    APPLICATIONS ||--o{ METADATA : contains
+    APPLICATIONS ||--o{ DOCUMENTS : has
+    
+    APPLICATIONS {
+        string id PK
+        string userId FK
+        string applicationStatus
+        string currentStep
+        array completedSteps
+        map personalInfo
+        map employmentDetails
+        map breInputData
+        map breOutputData
+        map loanOffer
+        array documentIds
+        array documentEvents
+        array sectionTimings
+        timestamp createdAt
+        timestamp lastUpdatedAt
+        timestamp submittedAt
+        timestamp finalDecisionAt
+    }
+    
+    DOCUMENTS {
+        string id PK
+        string applicationId FK
+        string userId FK
+        string documentType
+        string documentStatus
+        string fileName
+        int fileSize
+        string fileType
+        string storageUrl
+        string uploadedAt
+        string processedAt
+        string extractionStatus
+        map extractedData
+    }
+    
+    METADATA {
+        string eventId PK
+        string applicationId FK
+        timestamp eventTimestamp
+        string eventType
+        map eventData
+    }
+    
+    SCREEN_VISIT_EVENT {
+        string screenName
+        timestamp startTime
+        timestamp endTime
+        int durationSeconds
+    }
+    
+    SECTION_TIMING_EVENT {
+        string screenName
+        string sectionName
+        timestamp startTime
+        timestamp endTime
+        int durationSeconds
+    }
+    
+    DOCUMENT_EVENT {
+        string action
+        string documentType
+        string documentSourceType
+        string status
+        string extractionStatus
+        string failureReason
+        map cameraMetadata
+        map fileMetadata
+        timestamp timestamp
+    }
+    
+    APP_SESSION_EVENT {
+        map deviceInfo
+        timestamp startTime
+        timestamp endTime
+        int durationSeconds
+        boolean droppedOff
+        timestamp dropOffTimestamp
+    }
+    
+    EMPLOYMENT_VERIFICATIONS {
+        string verificationId PK
+        string applicationId FK
+        string verificationMethod
+        boolean isVerified
+        timestamp verifiedAt
+        string verifiedEmail
+    }
+    
+    OTPS {
+        string email PK
+        string otp
+        boolean isVerified
+        timestamp createdAt
+        timestamp expiresAt
+    }
+    
+    METADATA ||--o{ SCREEN_VISIT_EVENT : contains_type
+    METADATA ||--o{ SECTION_TIMING_EVENT : contains_type
+    METADATA ||--o{ DOCUMENT_EVENT : contains_type
+    METADATA ||--o{ APP_SESSION_EVENT : contains_type

@@ -1,0 +1,79 @@
+%% v1.5 - Added Backend LLM API calls for Docs & Obligations
+sequenceDiagram
+    participant User as User
+    participant App as Android App
+    participant Firestore as Firestore DB
+    participant BackendLLMAPI as Backend LLM API (Cloud Func)
+    participant LLM as LLM Service (Gemini)
+    participant CloudFuncOrch as Metadata Orchestrator (Cloud Func)
+    participant Email as Email Service (Brevo)
+
+    User->>App: Start App Session
+    App->>Firestore: Store APP_SESSION_START Event (+deviceInfo)
+    App->>CloudFuncOrch: Trigger Metadata Event (processEvent)
+
+    User->>App: Navigate to Screen (e.g., Document Upload)
+    App->>Firestore: Store SCREEN_VISIT Event (startTime)
+    App->>CloudFuncOrch: Trigger Metadata Event
+
+    User->>App: Upload Document (e.g., Bank Statement PDF)
+    App->>Firestore: Store DOCUMENT_EVENT (UPLOAD_STARTED)
+    App->>CloudFuncOrch: Trigger Metadata Event
+    App->>BackendLLMAPI: Trigger processDocument (AppID, DocID, PDF Content)
+    Note right of App: UI Shows Spinner for Bank Stmt
+
+    BackendLLMAPI->>+LLM: Send PDF data + prompt for extraction
+    LLM-->>-BackendLLMAPI: Return Structured JSON Data
+    BackendLLMAPI->>Firestore: Update documents/{docId} (extractedData, status=PROCESSED)
+    Note left of BackendLLMAPI: Asynchronous Response
+
+    %% User might continue uploading other documents in parallel...
+
+    User->>App: Navigate to Bureau Confirmation Screen (Conditional)
+    App->>Firestore: Store SCREEN_VISIT Event (endTime, duration) for Doc Upload
+    App->>Firestore: Store SCREEN_VISIT Event (startTime) for Bureau Confirm
+    App->>CloudFuncOrch: Trigger Metadata Events
+
+    User->>App: Input EMIs & Comments, Submit Bureau Confirmation
+    App->>Firestore: Store OBLIGATION_REFINEMENT data (user input)
+    App->>Firestore: Store OBLIGATION_REFINEMENT_SUBMITTED Event
+    App->>CloudFuncOrch: Trigger Metadata Event
+    App->>BackendLLMAPI: Trigger recalculateObligation (AppID, RefinementID)
+
+    BackendLLMAPI->>Firestore: Read Obligation Input Data
+    BackendLLMAPI->>+LLM: Send Tradeline/User Data + prompt
+    LLM-->>-BackendLLMAPI: Return Recalculated Obligation JSON
+    BackendLLMAPI->>Firestore: Update obligationRefinement/{id} (LLM results)
+    Note left of BackendLLMAPI: Asynchronous Response
+
+    %% User might navigate away while LLM processing happens...
+
+    User->>App: Put App in Background
+    App->>Firestore: Store APP_BACKGROUNDED Event
+    App->>CloudFuncOrch: Trigger processEvent
+    CloudFuncOrch->>Firestore: Write to backgrounded_apps
+
+    %% Drop-off Check (Scheduled)
+    activate CloudFuncOrch
+    CloudFuncOrch->>Firestore: Query backgrounded_apps
+    CloudFuncOrch->>Firestore: Query applications (status)
+    CloudFuncOrch->>Firestore: Query metadata (recent events)
+
+    alt Drop-off Confirmed
+        CloudFuncOrch->>Firestore: Update App Status to DROPPED_OFF
+        CloudFuncOrch->>Firestore: Fetch App Data & Metadata
+        CloudFuncOrch->>+LLM: Send Drop-off Analysis Request
+        LLM-->>-CloudFuncOrch: Return Drop-off Analysis
+        CloudFuncOrch->>+Email: Send Drop-off Summary Alert
+        Email-->>-CloudFuncOrch: Email Sent Confirmation
+    end
+    deactivate CloudFuncOrch
+
+    alt User Returns Within Timeout
+        User->>App: Bring App to Foreground
+        App->>Firestore: Store APP_FOREGROUNDED Event
+        App->>CloudFuncOrch: Trigger processEvent
+        CloudFuncOrch->>Firestore: Delete from backgrounded_apps
+    end
+
+    Note over User,Email: End of Example Flow

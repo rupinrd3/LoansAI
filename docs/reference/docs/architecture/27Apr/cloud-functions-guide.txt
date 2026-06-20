@@ -1,0 +1,873 @@
+# Firebase Cloud Functions Implementation Guide
+
+**(Note: This guide covers the Metadata Orchestrator functions as described in v1.4/v1.5. It needs expansion to include the new v1.5 Backend LLM API functions for Document Processing and Obligation Recalculation.)**
+
+This guide provides instructions for implementing the Metadata Orchestrator using Firebase Cloud Functions.
+[cite: 363]
+## Setup Instructions
+
+### 1. Install Firebase CLI
+
+```bash
+npm install -g firebase-tools
+…## Setup Instructions 
+### 1. Install Firebase CLI 
+```bash npm install -g firebase-tools ``` 
+### 2. Initialize Cloud Functions in Your Project 
+```bash # Login to Firebase firebase login 
+
+# Initialize Firebase in your project (select Functions) firebase init # Select TypeScript for your functions ``` 
+### 3. Project Structure Your functions project should look like this: 
+``` functions/ ├── src/ │ ├── index.ts # Main entry point │ ├── metadata/ # Metadata functions │ ├── dropoff/ # Drop-off detection functions │ └──…
+
+
+
+2. Initialize Cloud Functions in Your Project
+
+# Login to Firebase
+firebase login
+
+# Initialize Firebase in your project (select Functions)
+firebase init
+
+# Select TypeScript for your functions
+
+3. Project Structure
+
+Your functions project should look like this:
+functions/
+  ├── src/
+  │   ├── index.ts        # Main entry point
+  │   ├── metadata/       # Metadata functions
+  │   ├── dropoff/        # Drop-off detection functions
+  │   └── utils/          # Utility functions
+  ├── package.json
+  └── tsconfig.json
+
+  Implementation Code
+Main Entry Point (index.ts)
+import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin'; [cite: 366]
+import { processMetadataEvent } from './metadata/processEvent';
+import { checkForDropOffs } from './dropoff/checkDropoffs';
+import { onAppBackgrounded, onAppForegrounded } from './metadata/sessionEvents'; [cite: 367]
+
+// Initialize Firebase
+admin.initializeApp(); [cite: 367]
+
+// HTTP-triggered function for general metadata events
+export const processEvent = functions.https.onRequest(processMetadataEvent); [cite: 368]
+
+// Firestore-triggered functions for app session events
+// (Alternative: Could use processEvent for these too if preferred)
+// export const appBackgroundedHandler = functions.firestore
+//   .document('applications/{applicationId}/metadata/{eventId}')
+//   .onCreate(onAppBackgrounded); [cite: 369]
+// export const appForegroundedHandler = functions.firestore
+//   .document('applications/{applicationId}/metadata/{eventId}')
+//   .onCreate(onAppForegrounded); [cite: 370]
+
+// Scheduled function for checking drop-offs
+// This function is scheduled to run every minute to check for recent drop-offs
+export const dropOffChecker = functions.pubsub
+  .schedule('every 1 minutes')
+  .onRun(checkForDropOffs);
+
+
+
+Metadata Event Processing (metadata/processEvent.ts)
+import { Request, Response } from 'firebase-functions';
+import * as admin from 'firebase-admin';
+import * as logger from "firebase-functions/logger"; // Import logger
+
+export const processMetadataEvent = async (req: Request, res: Response) => { [cite: 372]
+  logger.info("Received processEvent request", { body: req.body }); // Add logging
+  try {
+    // Get metadata event from request body
+    const {
+      applicationId,
+      eventType,
+      eventData // Contains the actual event payload, e.g., screenVisit map
+    } = req.body; [cite: 373]
+
+    if (!applicationId || !eventType) {
+      logger.error("Missing required fields: applicationId or eventType"); [cite: 373]
+      return res.status(400).json({ error: 'Missing required fields' });
+    } [cite: 374]
+
+    // Create metadata document
+    const eventId = admin.firestore().collection('temp').doc().id; // Generate unique ID [cite: 374]
+    const eventTimestamp = admin.firestore.FieldValue.serverTimestamp(); // Use server timestamp [cite: 375]
+
+    // Create metadata event document reference
+    const metadataRef = admin.firestore()
+      .collection('applications')
+      .doc(applicationId)
+      .collection('metadata') // Store in subcollection
+      .doc(eventId); [cite: 376]
+
+    // Prepare the document data
+    const metadataDoc = {
+      eventId,
+      applicationId, // Store parent application ID for querying
+      eventTimestamp,
+      eventType,
+      ...(eventData || {}) // Spread the event-specific data
+    }; [cite: 377]
+
+    // Store the event
+    await metadataRef.set(metadataDoc); [cite: 377]
+    logger.info(`Stored metadata event ${eventId} for application ${applicationId}`); // Add logging
+
+    // If it's a background event, schedule a drop-off check
+    if (eventType === 'APP_BACKGROUNDED') { [cite: 378]
+      // Add to backgrounded_apps collection with TTL/check time
+      const dropOffTime = new Date();
+      dropOffTime.setSeconds(dropOffTime.getSeconds() + 30); // 30 seconds from now [cite: 379]
+
+      await admin.firestore()
+        .collection('backgrounded_apps')
+        .doc(applicationId)
+        .set({
+          applicationId,
+          backgroundedAt: eventTimestamp, // Use the timestamp from the event
+          dropOffCheckTime: admin.firestore.Timestamp.fromDate(dropOffTime), // Store as Firestore Timestamp
+          processed: false
+        }, { merge: true }); // Use merge to update if exists
+        logger.info(`Scheduled drop-off check for ${applicationId}`); // Add logging [cite: 380]
+    }
+
+    // If it's a foreground event, cancel any pending drop-off check
+    if (eventType === 'APP_FOREGROUNDED') { [cite: 380]
+      try {
+          await admin.firestore()
+            .collection('backgrounded_apps')
+            .doc(applicationId)
+            .delete();
+          logger.info(`Cancelled drop-off check for ${applicationId}`); // Add logging [cite: 381]
+      } catch (deleteError: any) {
+          // Log if deletion fails, but don't fail the function
+          logger.warn(`Could not delete backgrounded_apps doc ${applicationId}: ${deleteError.message}`);
+      }
+    }
+
+    return res.status(200).json({ success: true, eventId }); [cite: 381]
+
+  } catch (error: any) { [cite: 382]
+    logger.error('Error processing metadata event:', error); // Use logger
+    return res.status(500).json({ error: 'Failed to process event', details: error.message }); // Include details
+  } [cite: 383]
+};
+
+
+App Session Events (metadata/sessionEvents.ts) - Alternative if using Firestore Triggers
+
+(Note: The processEvent function above already handles background/foreground events. Using Firestore triggers here is an alternative approach, choose one.)
+
+import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
+import * as logger from "firebase-functions/logger"; // Import logger
+
+// Handle when app is backgrounded
+export const onAppBackgrounded = functions.firestore
+  .document('applications/{applicationId}/metadata/{eventId}')
+  .onCreate(async (snapshot, context) => { [cite: 384]
+      try {
+        const data = snapshot.data();
+        // Only process APP_BACKGROUNDED events [cite: 385]
+        if (data.eventType !== 'APP_BACKGROUNDED') {
+          return null; [cite: 386]
+        }
+
+        const { applicationId } = context.params; [cite: 386]
+        logger.info(`Handling APP_BACKGROUNDED for ${applicationId}`);
+
+        // Add to backgrounded_apps collection with TTL/check time [cite: 387]
+        const dropOffTime = new Date();
+        dropOffTime.setSeconds(dropOffTime.getSeconds() + 30); // 30 seconds from now [cite: 388]
+
+        await admin.firestore()
+          .collection('backgrounded_apps')
+          .doc(applicationId)
+          .set({
+            applicationId,
+            backgroundedAt: data.eventTimestamp, // Use the timestamp from the event
+            dropOffCheckTime: admin.firestore.Timestamp.fromDate(dropOffTime),
+            processed: false
+          }, { merge: true }); // Use merge
+        logger.info(`Scheduled drop-off check for ${applicationId}`);
+        return null; [cite: 389]
+      } catch (error: any) {
+        logger.error(`Error handling backgrounded event for ${context.params.applicationId}:`, error); [cite: 389]
+        return null;
+      }
+  }); [cite: 390]
+
+// Handle when app is foregrounded
+export const onAppForegrounded = functions.firestore
+  .document('applications/{applicationId}/metadata/{eventId}')
+  .onCreate(async (snapshot, context) => { [cite: 390]
+      try {
+        const data = snapshot.data();
+        // Only process APP_FOREGROUNDED events [cite: 391]
+        if (data.eventType !== 'APP_FOREGROUNDED') {
+          return null; [cite: 392]
+        }
+
+        const { applicationId } = context.params; [cite: 392]
+        logger.info(`Handling APP_FOREGROUNDED for ${applicationId}`);
+
+        // Remove from backgrounded_apps collection to cancel drop-off check [cite: 393]
+        try {
+            await admin.firestore()
+              .collection('backgrounded_apps')
+              .doc(applicationId)
+              .delete();
+            logger.info(`Cancelled drop-off check for ${applicationId}`); [cite: 394]
+        } catch (deleteError: any) {
+             // Log if deletion fails, but don't fail the function
+             logger.warn(`Could not delete backgrounded_apps doc ${applicationId}: ${deleteError.message}`);
+        }
+        return null; [cite: 394]
+      } catch (error: any) {
+        logger.error(`Error handling foregrounded event for ${context.params.applicationId}:`, error); [cite: 394]
+        return null;
+      }
+  });
+
+
+
+  Drop-off Detection (dropoff/checkDropoffs.ts)
+
+  import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
+import * as logger from "firebase-functions/logger"; // Import logger [cite: 396]
+import { analyzeAndAlertIfDroppedOff } from './analyzeDropOff'; // Assuming analyze logic is separated
+
+// Scheduled function to check for drop-offs
+export const checkForDropOffs = functions.pubsub
+  .schedule('every 1 minutes') // Runs every minute [cite: 397]
+  .onRun(async (context) => {
+    logger.info("Running dropOffChecker function", { timestamp: context.timestamp }); // Add logging
+    const now = admin.firestore.Timestamp.now(); // Use Firestore Timestamp for queries
+    try {
+      // Get all backgrounded apps that need checking [cite: 398]
+      const querySnapshot = await admin.firestore()
+        .collection('backgrounded_apps')
+        .where('dropOffCheckTime', '<=', now)
+        .where('processed', '==', false) // Only check unprocessed ones
+        .get();
+
+      if (querySnapshot.empty) { [cite: 399]
+        logger.info('No drop-offs to process.'); // Add logging
+        return null;
+      } [cite: 400]
+
+      logger.info(`Found ${querySnapshot.size} potential drop-offs.`); // Add logging [cite: 400]
+
+      // Process each potential drop-off
+      const processingPromises: Promise<void>[] = []; // Explicitly define promise type [cite: 401]
+      querySnapshot.forEach((doc) => {
+        const bgData = doc.data();
+        const applicationId = bgData.applicationId;
+
+        if (!applicationId) {
+            logger.warn("Skipping backgrounded_app doc without applicationId.", { docId: doc.id });
+            // Still mark as processed to avoid reprocessing
+            const markProcessedPromise = doc.ref.update({ processed: true })
+                .catch(err => logger.error(`Failed to mark invalid doc ${doc.id} as processed:`, err))
+                .then(() => {}); // Ensure it resolves to void
+            processingPromises.push(markProcessedPromise);
+            return; // Skip this document
+        }
+
+        // Create a promise to mark as processed *then* check details
+        const checkPromise = doc.ref.update({ processed: true }) // Mark as processed first [cite: 402]
+          .then(async () => {
+              logger.info(`Marked ${applicationId} as processed, checking details.`); // Add logging
+              await analyzeAndAlertIfDroppedOff(applicationId, bgData.backgroundedAt); // Call helper
+          }).catch(error => {
+              // Log error during processing but don't stop the whole batch
+              logger.error(`Error marking/checking ${applicationId}:`, error);
+          })
+          .then(() => {}); // Ensure the final promise resolves to void for Promise.all
+
+        processingPromises.push(checkPromise); [cite: 403]
+      });
+
+      // Wait for all processing to complete before finishing the function [cite: 404]
+      await Promise.all(processingPromises);
+      logger.info("Finished processing potential drop-offs batch."); // Add logging [cite: 405]
+
+      return null; [cite: 405]
+    } catch (error) {
+      logger.error('Error in dropOffChecker function:', error); [cite: 405]
+      return null;
+    }
+}); [cite: 406]
+
+// --- Helper Function (moved to analyzeDropOff.ts ideally) ---
+// This function contains the logic to check application status and recent activity
+async function analyzeAndAlertIfDroppedOff(applicationId: string, backgroundedTimestamp: admin.firestore.Timestamp) {
+    try {
+        logger.info(`Starting detailed drop-off check for ${applicationId}`); // Logging start
+        const appRef = admin.firestore().collection("applications").doc(applicationId); [cite: 406]
+        const appDoc = await appRef.get();
+
+        if (!appDoc.exists) { [cite: 407]
+            logger.warn(`App ${applicationId} not found during drop-off check.`); // Logging
+            // Clean up backgrounded_apps entry if app doesn't exist
+            await admin.firestore().collection("backgrounded_apps").doc(applicationId).delete().catch(()=>{ logger.warn(`Failed to delete backgrounded_apps doc ${applicationId} for non-existent app.`);});
+            return;
+        } [cite: 408]
+
+        const appData = appDoc.data();
+        if (!appData) { [cite: 408]
+            logger.error(`App data null for ${applicationId}. Cannot process drop-off.`); // Logging
+            return;
+        } [cite: 409]
+
+        // Only process applications that are IN_PROGRESS
+        if (appData.applicationStatus !== "IN_PROGRESS") { [cite: 409]
+            logger.info(`App ${applicationId} status is ${appData.applicationStatus}, not IN_PROGRESS. Removing drop-off check.`); // Logging [cite: 409]
+            // Clean up backgrounded_apps entry
+            await admin.firestore().collection("backgrounded_apps").doc(applicationId).delete().catch(()=>{logger.warn(`Failed to delete processed backgrounded_apps doc ${applicationId}.`);});
+            return; [cite: 410]
+        }
+
+        // Check for any recent activity after backgrounding
+        const recentEventsSnapshot = await admin.firestore()
+          .collection("applications").doc(applicationId).collection("metadata")
+          .where("eventTimestamp", ">", backgroundedTimestamp) // Check for events *after* backgrounding
+          .orderBy("eventTimestamp", "desc")
+          .limit(1)
+          .get(); [cite: 410]
+
+        // If there are recent events, don't consider as dropped off [cite: 411]
+        if (!recentEventsSnapshot.empty) {
+            logger.info(`Recent activity found for ${applicationId} since backgrounding. Not dropped off.`); // Logging [cite: 411]
+             // Clean up backgrounded_apps entry
+            await admin.firestore().collection("backgrounded_apps").doc(applicationId).delete().catch(()=>{logger.warn(`Failed to delete backgrounded_apps doc ${applicationId} due to recent activity.`);});
+            return; [cite: 412]
+        }
+
+        // --- CONFIRMED DROP-OFF ---
+        logger.info(`CONFIRMED DROP-OFF for ${applicationId}. Taking action.`); // Logging [cite: 412]
+
+        // 1. Update application status
+        await appRef.update({
+            applicationStatus: "DROPPED_OFF",
+            lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp() // Update timestamp
+        }); [cite: 413]
+        logger.info(`Updated ${applicationId} status to DROPPED_OFF.`); // Logging [cite: 413]
+
+        // 2. Get metadata for analysis
+        const metadataSnapshot = await admin.firestore()
+            .collection("applications").doc(applicationId).collection("metadata")
+            .orderBy("eventTimestamp", "desc")
+            .limit(20) // Limit to recent events for context
+            .get(); [cite: 414]
+        const metadata = metadataSnapshot.docs.map((doc) => doc.data()); [cite: 414]
+
+        // 3. Analyze the drop-off using LLM (Call the function from analyzeDropOff.ts)
+        const analysis = await analyzeDropOff(appData, metadata); [cite: 415]
+        logger.info(`LLM Analysis result for ${applicationId}:`, analysis); // Logging [cite: 416]
+
+        // 4. Optional: Store analysis result
+        // await db.collection("dropoff_analyses").doc(applicationId).set({ ...analysis, analyzedAt: admin.firestore.FieldValue.serverTimestamp() }); [cite: 417]
+
+        // 5. Send email notification (Call the function from emailService.ts)
+        await sendDropOffEmail(applicationId, appData, analysis); // Calls Brevo Alert helper [cite: 418]
+
+    } catch (error) {
+        logger.error(`Error during detailed drop-off check for ${applicationId}:`, error); // Logging [cite: 418]
+    }
+}
+
+
+LLM Analysis (dropoff/analyzeDropOff.ts)
+
+import axios from 'axios';
+import * as functions from 'firebase-functions';
+import * as logger from "firebase-functions/logger"; // Import logger
+
+// --- Configuration Access ---
+const getConfigValue = (keys: string[]): string | undefined => {
+    let current: any = functions.config();
+    for (const key of keys) {
+        if (current === undefined || current === null) return undefined;
+        current = current[key];
+    }
+    return typeof current === 'string' ? current : undefined;
+};
+
+// Get configuration from environment
+const LLM_API_KEY = getConfigValue(["llm", "api_key"]); // [cite: 421]
+const LLM_PROVIDER = getConfigValue(["llm", "provider"]) || 'gemini'; // 'gemini' or 'openai' [cite: 422]
+const LLM_MODEL_GEMINI = getConfigValue(["llm", "model_gemini"]) || "gemini-1.5-flash-latest";
+const LLM_MODEL_OPENAI = getConfigValue(["llm", "model_openai"]) || "gpt-4o-mini"; [cite: 423]
+
+// Main analysis function
+export async function analyzeDropOff(appData: any, metadata: any[]): Promise<any> { [cite: 423]
+  logger.info(`Analyzing drop-off for ${appData.id} using ${LLM_PROVIDER}`);
+  try {
+    // Select the appropriate LLM API based on configuration
+    if (LLM_PROVIDER === 'gemini') { [cite: 423]
+      return await analyzeWithGemini(appData, metadata);
+    } else if (LLM_PROVIDER === 'openai') { [cite: 424]
+      return await analyzeWithOpenAI(appData, metadata);
+    } else {
+        logger.error(`Unsupported LLM provider configured: ${LLM_PROVIDER}`);
+        throw new Error(`Unsupported LLM provider: ${LLM_PROVIDER}`);
+    } [cite: 425]
+  } catch (error: any) {
+    logger.error(`Error analyzing drop-off for ${appData.id}:`, error); [cite: 425]
+    // Return default/error structure
+    return {
+      customerProfile: 'Error analyzing customer data', [cite: 426]
+      lastStep: appData.currentStep || 'Unknown', [cite: 427]
+      followUpPriority: 5, // Medium priority by default [cite: 427]
+      issuesSummary: `Unable to analyze issues due to an error: ${error.message}` [cite: 428]
+    };
+  }
+}
+
+// Analyze using Google Gemini
+async function analyzeWithGemini(appData: any, metadata: any[]): Promise<any> { [cite: 428]
+  if (!LLM_API_KEY) {
+      logger.warn("Gemini API Key not configured. Returning basic analysis.");
+      return createBasicAnalysis(appData, "Gemini LLM disabled.");
+  }
+  const modelToUse = LLM_MODEL_GEMINI;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent`; [cite: 428]
+  const prompt = createAnalysisPrompt(appData, metadata); [cite: 429]
+
+  logger.info(`Calling Gemini API (${modelToUse}) for ${appData.id}`);
+  try {
+      const response = await axios.post(
+        `${apiUrl}?key=${LLM_API_KEY}`, [cite: 431]
+        {
+          contents: [{ parts: [{ text: prompt }] }],
+          // Optional: Add safety settings if needed
+          // safetySettings: [ ... ],
+          generationConfig: {
+              responseMimeType: "application/json", // Request JSON output
+              temperature: 0.3 // Lower temperature for more deterministic output
+          }
+        },
+        { timeout: 20000 } // Add timeout
+      ); [cite: 431]
+
+      // Check for valid response structure
+      if (!response.data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          logger.error("Invalid Gemini response structure:", response.data);
+          throw new Error("Invalid Gemini response structure received.");
+      }
+
+      // Parse the response [cite: 432]
+      const generatedContent = response.data.candidates[0].content.parts[0].text;
+      logger.info(`Raw Gemini response for ${appData.id}: ${generatedContent.substring(0, 100)}...`);
+
+      try {
+        // Try to parse JSON directly
+        return JSON.parse(generatedContent); [cite: 433]
+      } catch (e) {
+        logger.warn(`Gemini response for ${appData.id} was not valid JSON, attempting text extraction.`);
+        // If not valid JSON, extract key information from text
+        return extractAnalysisFromText(generatedContent, appData.currentStep); [cite: 434]
+      }
+  } catch (error: any) {
+      logger.error(`Error calling Gemini API for ${appData.id}:`, error.response?.data || error.message);
+      return createBasicAnalysis(appData, `Gemini API failed: ${error.message}`);
+  }
+}
+
+// Analyze using OpenAI
+async function analyzeWithOpenAI(appData: any, metadata: any[]): Promise<any> { [cite: 434]
+  if (!LLM_API_KEY) {
+      logger.warn("OpenAI API Key not configured. Returning basic analysis.");
+      return createBasicAnalysis(appData, "OpenAI LLM disabled.");
+  }
+  const modelToUse = LLM_MODEL_OPENAI;
+  const apiUrl = '[https://api.openai.com/v1/chat/completions](https://api.openai.com/v1/chat/completions)'; [cite: 435]
+  const prompt = createAnalysisPrompt(appData, metadata); // Use the same prompt structure [cite: 437]
+
+  logger.info(`Calling OpenAI API (${modelToUse}) for ${appData.id}`);
+  try {
+      const response = await axios.post(
+        apiUrl,
+        {
+          model: modelToUse,
+          messages: [{
+            role: "user",
+            content: prompt
+          }],
+          temperature: 0.3, // Lower temperature
+          response_format: { type: "json_object" } // Request JSON output
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${LLM_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 20000 // Add timeout
+        } [cite: 438]
+      );
+
+      // Check for valid response structure
+      if (!response.data.choices?.[0]?.message?.content) {
+          logger.error("Invalid OpenAI response structure:", response.data);
+          throw new Error("Invalid OpenAI response structure received.");
+      }
+
+      // Parse the response [cite: 439]
+      const generatedContent = response.data.choices[0].message.content;
+      logger.info(`Raw OpenAI response for ${appData.id}: ${generatedContent.substring(0, 100)}...`);
+
+      try {
+        // Try to parse JSON directly (OpenAI should return valid JSON with response_format)
+        return JSON.parse(generatedContent); [cite: 440]
+      } catch (e) {
+        logger.error(`OpenAI response for ${appData.id} was not valid JSON despite requesting it:`, e);
+        // Fallback extraction just in case
+        return extractAnalysisFromText(generatedContent, appData.currentStep); [cite: 441]
+      }
+  } catch (error: any) {
+      logger.error(`Error calling OpenAI API for ${appData.id}:`, error.response?.data || error.message);
+      return createBasicAnalysis(appData, `OpenAI API failed: ${error.message}`);
+  }
+}
+
+// Helper to create the LLM prompt
+function createAnalysisPrompt(appData: any, metadata: any[]): string {
+    // --- IMPORTANT: Review and refine this prompt for your specific needs ---
+    // Limit metadata size to avoid exceeding token limits
+    const recentMetadata = metadata.slice(0, 10); // Show max 10 recent events
+    const metadataString = recentMetadata.map(event => {
+        // Simplify event representation
+        const time = (event.eventTimestamp as admin.firestore.Timestamp)?.toDate().toLocaleTimeString() || 'N/A';
+        return `- ${time}: ${event.eventType} ${event.screenVisit?.screenName ? `(${event.screenVisit.screenName})` : ''}`;
+    }).join('\n');
+
+    return `
+    Analyze this loan application drop-off data and provide a brief summary.
+    Focus on identifying the likely point of drop-off and potential reasons.
+
+    Application ID: ${appData.id}
+    Current Application Status: ${appData.applicationStatus}
+    Last Known Step in UI: ${appData.currentStep || 'N/A'} [cite: 441]
+    Completed Steps: ${appData.completedSteps ? appData.completedSteps.join(', ') : 'None'} [cite: 436]
+    Employment Type: ${appData.employmentDetails?.employmentType || 'N/A'}
+    Declared Monthly Salary: ${appData.employmentDetails?.monthlySalary || 'N/A'}
+
+    Recent Metadata Events (latest first):
+    ${metadataString}
+
+    Please provide ONLY a valid JSON object with the following keys:
+    1. "customerProfile": Brief summary of the applicant type and situation based ONLY on the data provided (e.g., "Salaried Private Sector Applicant").
+    2. "lastStep": Your best guess of the specific UI step or action where they likely dropped off based on available data (e.g., "Employment Details Screen", "Document Upload - Bank Statement").
+    3. "followUpPriority": An integer from 1 (lowest) to 10 (highest) indicating how important it is to follow up. Consider factors like application completeness and potential value.
+    4. "issuesSummary": A concise string summarizing potential reasons for drop-off (e.g., "Dropped off during document upload, possibly due to complex document requirements or technical issue."). Avoid listing metadata directly.
+
+    Ensure the output is ONLY the JSON object, without any introductory text, explanations, or markdown formatting like \`\`\`json.
+    `; [cite: 437]
+}
+
+// Helper to extract analysis from potentially non-JSON text
+function extractAnalysisFromText(text: string, currentStep: string): any { [cite: 441]
+  logger.warn("Attempting to extract analysis from non-JSON LLM response text.");
+  let result = {
+    customerProfile: 'Analysis format error.', [cite: 442]
+    lastStep: currentStep || 'Unknown', [cite: 442]
+    followUpPriority: 5, // Medium priority [cite: 442]
+    issuesSummary: 'Could not parse LLM response.' [cite: 442]
+  };
+  try {
+      const profileMatch = text.match(/Customer Profile:\s*"?([^"\n]+)"?/i); [cite: 443]
+      if (profileMatch) result.customerProfile = profileMatch[1].trim(); [cite: 444]
+
+      const stepMatch = text.match(/Last Known Step:\s*"?([^"\n]+)"?/i); [cite: 445]
+      if (stepMatch) result.lastStep = stepMatch[1].trim(); [cite: 446]
+
+      const priorityMatch = text.match(/Follow-Up Priority:\s*"?(\d+)"?/i); [cite: 446]
+      if (priorityMatch) result.followUpPriority = parseInt(priorityMatch[1], 10); [cite: 446]
+
+      // Adjusted regex to better capture multi-line summaries potentially ending the string
+      const issuesMatch = text.match(/Issues Summary:\s*"?((?:.|\s)*?)(?:\n\n|###|$)/i); [cite: 447]
+      if (issuesMatch) result.issuesSummary = issuesMatch[1].replace(/^["\s]+|["\s]+$/g, '').trim(); [cite: 447]
+
+  } catch (extractError: any) {
+      logger.error("Error extracting analysis from text:", extractError);
+  }
+  logger.info("Extracted analysis from text:", result);
+  return result;
+}
+
+// Helper to create a basic analysis structure when LLM fails
+function createBasicAnalysis(appData: any, errorMessage: string): any {
+    return {
+      customerProfile: `Analysis Failed`,
+      lastStep: appData.currentStep || "Unknown",
+      followUpPriority: 5,
+      issuesSummary: errorMessage || "LLM analysis could not be performed."
+    };
+}
+
+
+Email Service (utils/emailService.ts)
+import axios from 'axios';
+import * as functions from 'firebase-functions'; [cite: 448]
+import * as logger from "firebase-functions/logger"; // Import logger
+
+// --- Configuration Access ---
+const getConfigValue = (keys: string[]): string | undefined => {
+    let current: any = functions.config();
+    for (const key of keys) {
+        if (current === undefined || current === null) return undefined;
+        current = current[key];
+    }
+    return typeof current === 'string' ? current : undefined;
+};
+
+// Get configuration from environment
+const EMAIL_API_KEY = getConfigValue(["brevo", "key"]) || getConfigValue(["email", "api_key"]); // Support both config names [cite: 449]
+const EMAIL_FROM = getConfigValue(["brevo", "from"]) || getConfigValue(["email", "from"]) || 'noreply@loansai.com'; [cite: 449]
+const EMAIL_TO = getConfigValue(["brevo", "to"]) || getConfigValue(["email", "to"]) || 'support@loansai.com'; [cite: 449]
+
+// Function to send the drop-off alert email using Brevo
+export async function sendDropOffEmail(applicationId: string, appData: any, analysis: any): Promise<void> { [cite: 450]
+  logger.info(`Attempting to send drop-off email alert for ${applicationId} via Brevo.`);
+
+  if (!EMAIL_API_KEY) {
+      logger.error("Brevo/Email API Key (brevo.key or email.api_key) missing for alerts. Email not sent.");
+      return; // Exit if API key is not configured
+  }
+
+  try {
+    // Use Brevo API endpoint
+    const apiUrl = '[https://api.brevo.com/v3/smtp/email](https://api.brevo.com/v3/smtp/email)'; [cite: 450]
+
+    // Extract applicant name safely
+    const name = appData?.personalInfo?.name || 'Applicant'; [cite: 451]
+
+    // Format HTML email content safely
+    const htmlContent = `
+      <div style="font-family: sans-serif; line-height: 1.6;">
+        <h2 style="color: #0A4287;">Loan Application Drop-off Alert</h2>
+        <p><strong>Application ID:</strong> ${applicationId || 'N/A'}</p>
+        <p><strong>Applicant:</strong> ${name}</p>
+        <hr>
+        <h3 style="color: #0A4287;">Drop-off Analysis Summary</h3>
+        <p><strong>Customer Profile:</strong> ${analysis?.customerProfile || 'N/A'}</p> [cite: 452]
+        <p><strong>Last Known Step:</strong> ${analysis?.lastStep || 'N/A'}</p> [cite: 452]
+        <p><strong>Follow-Up Priority:</strong> ${analysis?.followUpPriority || 'N/A'}/10</p> [cite: 452]
+        <p><strong>Potential Issues Summary:</strong></p>
+        <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word;">${analysis?.issuesSummary || 'N/A'}</pre> [cite: 453]
+        <hr>
+        <h3 style="color: #0A4287;">Application Progress</h3>
+        <p><strong>Current Step:</strong> ${appData?.currentStep || 'N/A'}</p> [cite: 453]
+        <p><strong>Completed Steps:</strong> ${appData?.completedSteps ? appData.completedSteps.join(', ') : 'None'}</p> [cite: 454]
+        <hr>
+        <p><i>This is an automated alert from the Loan Application System. Timestamp: ${new Date().toISOString()}</i></p>
+      </div>
+    `; [cite: 454]
+
+    // Send email via Brevo API [cite: 455]
+    const response = await axios.post(
+      apiUrl,
+      {
+        sender: {
+          name: 'Loans AI System Alerts', // Customize sender name
+          email: EMAIL_FROM // Use configured sender email
+        },
+        to: [{
+          email: EMAIL_TO, // Use configured recipient email
+          name: 'Support Team' // Customize recipient name
+        }], [cite: 456]
+        subject: `Drop-off Alert: Loan App ${applicationId} - ${name}`,
+        htmlContent: htmlContent
+      },
+      {
+        headers: {
+          'api-key': EMAIL_API_KEY,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json' // Recommended by Brevo
+        },
+        timeout: 15000 // Add a timeout (15 seconds)
+      }
+    ); [cite: 456]
+
+    // Brevo returns 201 Created on success
+    if (response.status === 201) {
+        logger.info(`Successfully sent drop-off alert email for ${applicationId} via Brevo. Message ID: ${response.data?.messageId}`); [cite: 457]
+    } else {
+        // Log unexpected success status codes
+        logger.warn(`Brevo returned unexpected status code ${response.status} for ${applicationId}:`, response.data);
+    }
+
+  } catch (error: any) {
+    // Log detailed error information
+    if (axios.isAxiosError(error)) {
+        logger.error(`Error sending drop-off email via Brevo for ${applicationId}:`, {
+            message: error.message,
+            url: error.config?.url,
+            method: error.config?.method,
+            status: error.response?.status,
+            data: error.response?.data
+        });
+    } else {
+        logger.error(`Non-Axios error sending drop-off email via Brevo for ${applicationId}:`, error);
+    } [cite: 458]
+    // Don't rethrow, just log the error. The main function will continue.
+  }
+}
+
+Deployment
+
+Deploy your functions to Firebase:
+firebase deploy --only functions
+
+Configuration
+
+Set environment variables for your functions using Firebase CLI:
+
+# Set LLM configuration (Choose EITHER Gemini OR OpenAI)
+# Example for Gemini:
+firebase functions:config:set llm.provider="gemini" llm.model_gemini="gemini-1.5-flash-latest" llm.api_key="YOUR_GEMINI_API_KEY"
+
+# Example for OpenAI:
+# firebase functions:config:set llm.provider="openai" llm.model_openai="gpt-4o-mini" llm.api_key="YOUR_OPENAI_API_KEY"
+
+# Set email configuration (Brevo)
+firebase functions:config:set brevo.key="YOUR_BREVO_API_KEY" brevo.from="verified-sender@yourdomain.com" brevo.to="support-alerts@yourdomain.com"
+
+
+(Remember to replace placeholder keys and emails with your actual values)  
+
+Android App Integration
+
+Update your Android app's MetadataRepositoryImpl.kt to send metadata events to the processEvent Cloud Function endpoint via HTTP POST.
+
+// Example Snippet for MetadataRepositoryImpl.kt
+
+import retrofit2.Call // Ensure correct import
+import retrofit2.http.Body
+import retrofit2.http.POST
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.tasks.await
+import retrofit2.await // Use retrofit2.await for suspending calls
+import java.util.UUID
+import com.google.firebase.firestore.FieldValue // Import FieldValue
+
+// ... other imports ...
+
+class MetadataRepositoryImpl @Inject constructor(
+    // Assuming you have Retrofit configured elsewhere (e.g., NetworkModule)
+    // and inject the API interface.
+    private val metadataApi: MetadataApi,
+    private val firestore: FirebaseFirestore
+) : MetadataRepository {
+
+    // ... other MetadataRepository methods ...
+
+    override suspend fun sendEventToOrchestrator(
+        applicationId: String,
+        eventType: MetadataEventType, // Use the Enum
+        metadata: Map<String, Any>?
+    ): Flow<Resource<Boolean>> = flow { [cite: 459]
+        emit(Resource.Loading()) [cite: 460]
+
+        // Convert potentially complex objects in metadata to JSON strings if needed
+        // Firestore handles Timestamps, Numbers, Strings, Booleans, Maps, Lists directly
+        val processedMetadata = metadata // Keep as is for now
+
+        try {
+            // 1. Store in Firestore directly first (more reliable)
+            val eventId = UUID.randomUUID().toString()
+            // Use Firestore server timestamp for consistency
+            val eventTimestamp = FieldValue.serverTimestamp() [cite: 460]
+
+            val metadataRef = firestore.collection("applications")
+                .document(applicationId)
+                .collection("metadata") // Target subcollection [cite: 461]
+                .document(eventId)
+
+            val metadataDoc = hashMapOf<String, Any>(
+                "eventId" to eventId,
+                "applicationId" to applicationId, // Store parent ID
+                "eventTimestamp" to eventTimestamp,
+                "eventType" to eventType.name // Store enum name as string [cite: 462]
+            ).apply {
+                if (processedMetadata != null) {
+                    // Add all event data to the document [cite: 462]
+                    // Be mindful of Firestore limits (1MB doc size, nested depth)
+                    putAll(processedMetadata)
+                }
+            }
+
+            // Store in Firestore [cite: 463]
+            metadataRef.set(metadataDoc).await() [cite: 463]
+            AppLogger.d("Successfully stored metadata event $eventId locally for $applicationId")
+
+            // 2. Then, attempt to send to Cloud Function endpoint (optional, for real-time if needed)
+            // Note: Depending on your needs, just storing in Firestore might be sufficient,
+            // and Cloud Functions can react via Firestore triggers instead of HTTP calls.
+            // The current guide seems to use HTTP trigger for `processEvent`.
+
+            // --> The HTTP call part below might be redundant if Firestore triggers are used
+            // --> or if the primary goal is just local storage + scheduled checks.
+            // --> Assuming the HTTP call is intended as per the guide:
+
+            // val request = MetadataEventRequest(
+            //     applicationId = applicationId,
+            //     eventType = eventType.name, // Send enum name
+            //     eventData = processedMetadata ?: emptyMap()
+            // )
+
+            // val response = metadataApi.processEvent(request) // Assuming processEvent is suspend fun
+            // AppLogger.d("Sent metadata event $eventId to orchestrator for $applicationId, Success: ${response.success}")
+            // emit(Resource.Success(response.success))
+
+            // --- Simplified: Emit Success after Firestore write ---
+            // The Cloud Function can read from Firestore if needed.
+            // This makes the app more resilient to temporary function unavailability.
+             emit(Resource.Success(true))
+            // --- End Simplified ---
+
+
+        } catch (e: Exception) {
+            // Firestore write or API call failed
+             AppLogger.e("Error sending/storing metadata event for $applicationId: ${e.message}", e) [cite: 466]
+             // Even if the function call fails, consider Firestore write a success for the app
+             emit(Resource.Success(true)) // Or Resource.Error if local write is also critical [cite: 465]
+        }
+    }
+    // ... other MetadataRepository methods ...
+}
+
+// Create a Retrofit API interface (e.g., in data/remote/api/MetadataApi.kt)
+interface MetadataApi {
+    // Define as suspend fun if using await() directly
+    @POST("processEvent") // Use the correct function name deployed
+    suspend fun processEvent(@Body request: MetadataEventRequest): MetadataEventResponse // Return type matching Cloud Function response
+}
+
+// Data classes for the API (e.g., in data/model/MetadataDto.kt)
+data class MetadataEventRequest(
+    val applicationId: String,
+    val eventType: String,
+    // Ensure data sent is Firestore compatible (String, Number, Boolean, Timestamp, Map, Array)
+    val eventData: Map<String, Any>
+)
+
+data class MetadataEventResponse(
+    val success: Boolean,
+    val eventId: String? = null, [cite: 467]
+    val error: String? = null
+)
+
+// Ensure MetadataRepository interface and DI bindings are updated if needed
+
+
+(Remember to adapt the Android code snippet to your specific project structure, DI setup, and error handling strategy. Ensure the Retrofit interface and base URL point correctly to your deployed Cloud Function.)   

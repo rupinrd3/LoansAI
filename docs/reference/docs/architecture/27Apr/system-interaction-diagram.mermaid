@@ -1,0 +1,70 @@
+%% System Interaction Diagram v1.5
+graph LR
+
+    subgraph User Device
+        A[Android App]
+    end
+
+    subgraph Firebase
+        B(Firebase Auth)
+        C[(Firestore DB)]
+        D(Firebase Storage)
+        E[Cloud Functions Orchestrator]
+        F[Backend LLM API (Cloud Functions)]
+    end
+
+    subgraph Core Backend Process
+        G(Camunda Engine)
+        H(Python BRE Worker)
+    end
+
+    subgraph External Services
+        I(Appwrite Bureau DB)
+        J(LLM Service - Gemini)
+        K(Email Service - Brevo)
+        L(PAN Verification API)
+    end
+
+    %% App Interactions
+    User --> A
+    A -- Auth Requests --> B
+    A -- CRUD App Data / Doc Meta / Obligation Input / Read State --> C
+    A -- Store/Retrieve Docs --> D
+    A -- Send Metadata Events --> E
+    A -- Trigger Document Processing --> F
+    A -- Trigger Obligation Recalculation --> F
+    A -- Verify PAN --> L
+    A -- Trigger Bureau Fetch / Trigger BRE --> G
+
+    %% Backend LLM API Interactions
+    F -- Calls Gemini for Extraction/Recalculation --> J
+    F -- Reads App/Doc/Obligation Data --> C
+    F -- Writes Extracted Data --> C
+    F -- Writes Recalculated Obligation --> C
+
+    %% Cloud Functions Orchestrator Interactions
+    E -- Reads App Status / Metadata --> C
+    E -- Writes App Status (Dropped Off) --> C
+    E -- Calls LLM for Drop-off Analysis --> J
+    E -- Send Alert Summary --> K
+
+    %% Camunda & BRE Interactions
+    G -- Request Bureau Data --> I
+    G -- Assign BRE Task --> H
+    H -- Complete Task (Decision) --> G
+    G -- Update Application Status --> C
+
+    %% Other Service Interactions
+    B -- Auth State --> A
+    I -- Bureau Data --> G
+    J -- Analysis / Extraction Results --> F
+    J -- Drop-off Analysis Results --> E
+    K -- Sends Email --> User
+    L -- PAN Verification Result --> A
+    D -- Serves/Stores Documents --> A
+
+    %% Styling (Optional, for better visual distinction if renderer supports it)
+    % style A fill:#D1F2EB,stroke:#00796B
+    % style B,C,D,E,F fill:#FFE0B2,stroke:#E65100
+    % style G,H fill:#BBDEFB,stroke:#0D47A1
+    % style I,J,K,L fill:#DCEDC8,stroke:#33691E

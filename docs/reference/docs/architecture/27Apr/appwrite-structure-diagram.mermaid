@@ -1,0 +1,64 @@
+%% v1.5 - No changes from v1.4
+erDiagram
+    BORROWER_SUMMARY ||--o{ ENQUIRIES : has
+    BORROWER_SUMMARY ||--o{ TRADELINES : has
+
+    BORROWER_SUMMARY {
+        string panNumber PK
+        string controlNumber
+        string customerName
+        int creditScore "Nullable (NH)"
+        string reportDate "YYYY-MM-DD"
+        string dateOfBirth "YYYY-MM-DD"
+        string gender
+        string addresses "JSON String"
+        string contacts "JSON String"
+        string email "Nullable"
+        int totalAccounts
+        int openAccounts
+        int closedAccounts
+        double totalLoanAmount
+        double currentBalance
+        double totalOverdueAmount
+        boolean suitFiled
+        boolean wilfulDefault
+        boolean writtenOffStatus
+        string delinquencyStatus
+    }
+
+    ENQUIRIES {
+        string id PK "Appwrite Document ID"
+        string panNumber FK
+        string enquiryDate "YYYY-MM-DD"
+        string memberName
+        string purpose "Nullable"
+        string type "Nullable"
+        double amount "Nullable"
+    }
+
+    TRADELINES {
+        string id PK "Appwrite Document ID"
+        string panNumber FK
+        string memberName
+        string accountType
+        string accountNumber "Masked"
+        string ownership
+        double creditLimit "Nullable"
+        double highCredit "Nullable"
+        double currentBalance "Nullable"
+        double amountOverdue "Nullable"
+        double rateOfInterest "Nullable"
+        int repaymentTenure "Nullable"
+        double emiAmount "Nullable"
+        string dateOpened "YYYY-MM-DD"
+        string dateClosed "Nullable, YYYY-MM-DD"
+        string lastPaymentDate "Nullable, YYYY-MM-DD"
+        string dateReported "YYYY-MM-DD"
+        string facilityStatus "Nullable"
+        string suitFiled "Nullable"
+        string paymentFrequency "Nullable"
+        string paymentHistory "DPD String"
+        double writtenOffTotal "Nullable"
+        double writtenOffPrincipal "Nullable"
+        string controlNumber "Nullable"
+    }

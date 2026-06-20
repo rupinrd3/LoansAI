@@ -1,0 +1,63 @@
+erDiagram
+    BORROWER_SUMMARY ||--o{ ENQUIRIES : has
+    BORROWER_SUMMARY ||--o{ TRADELINES : has
+    
+    BORROWER_SUMMARY {
+        string panNumber PK
+        string controlNumber
+        string customerName
+        int creditScore
+        string reportDate
+        string dateOfBirth
+        string gender
+        string addresses
+        string contacts
+        string email
+        int totalAccounts
+        int openAccounts
+        int closedAccounts
+        double totalLoanAmount
+        double currentBalance
+        double totalOverdueAmount
+        boolean suitFiled
+        boolean wilfulDefault
+        boolean writtenOffStatus
+        string delinquencyStatus
+    }
+    
+    ENQUIRIES {
+        string id PK
+        string panNumber FK
+        string enquiryDate
+        string memberName
+        string purpose
+        string type
+        double amount
+    }
+    
+    TRADELINES {
+        string id PK
+        string panNumber FK
+        string memberName
+        string accountType
+        string accountNumber
+        string ownership
+        double creditLimit
+        double highCredit
+        double currentBalance
+        double amountOverdue
+        double rateOfInterest
+        int repaymentTenure
+        double emiAmount
+        string dateOpened
+        string dateClosed
+        string lastPaymentDate
+        string dateReported
+        string facilityStatus
+        string suitFiled
+        string paymentFrequency
+        string paymentHistory
+        double writtenOffTotal
+        double writtenOffPrincipal
+        string controlNumber
+    }

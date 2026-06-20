@@ -1,0 +1,260 @@
+**app_files/**
+* `build.gradle.kts`: The Gradle build script for the Android application module, defining plugins, dependencies, and build configurations.
+* `google-services.json`: Configuration file containing Firebase project details and API keys for connecting the app to Firebase services.
+* `Implementation Plan 25Apr.md`: Markdown file outlining the detailed implementation plan for version 1.4.
+* `Loan Application Data Catalog 25Apr.md`: Markdown file containing the detailed data catalog for version 1.4.
+* `Loan Application Requirements 25Apr.md`: Markdown file detailing the requirements and technical specifications for version 1.4.
+* `strings.xml`: Android resources file containing string literals used throughout the application.
+* `file_provider.xml`: XML configuration defining accessible file paths for the `FileProvider`.
+* `AndroidManifest.xml`: The core configuration file for the Android application, defining permissions, components, and providers.
+
+**com/loansai/unassisted/**
+* `MainApplication.kt`: Custom `Application` class used for Hilt initialization and other app-level setup like Timber and Firebase.
+* `MainActivity.kt`: The main entry point activity for the Android application.
+
+**com/loansai/unassisted/data/local/database/di/**
+* `NetworkModule.kt`: Dagger Hilt module providing network-related dependencies like Gson, OkHttpClient, Retrofit, and API interfaces. *(Note: Package name suggests network, but file content places it here)*
+
+**com/loansai/unassisted/data/local/source/**
+* `PreferencesDataSource.kt`: Data source class for managing application preferences and local caching using DataStore.
+
+**com/loansai/unassisted/data/model/**
+* `AIAssistantMessageDto.kt`: Defines Data Transfer Objects (DTOs) for AI assistant messages (`AIAssistantMessageDto`, `AIConversationDto`) and requests (`AIAssistantRequest`).
+* `DecisionDto.kt`: Defines a Data Transfer Object (DTO) for representing an application decision status and reason.
+* `DocumentDto.kt`: Defines Data Transfer Objects (DTOs) for documents and related data (e.g., `DocumentDto`, `BankStatementDataDto`).
+* `EmploymentDetailsDto.kt`: Defines Data Transfer Objects (DTOs) for employment details (`EmploymentDetailsDto`, `EmployerDto`).
+* `LoanApplicationDto.kt`: Defines Data Transfer Objects (DTOs) for `LoanApplication` and `LoanOffer`.
+* `PANDetailsDto.kt`: Defines Data Transfer Objects (DTOs) for PAN details (`PANDetailsDto`) and bureau reports (`BureauReportDto`).
+* `PersonalInfoDto.kt`: Defines Data Transfer Objects (DTOs) for personal information (`PersonalInfoDto`, `AddressDto`).
+* `UserDto.kt`: Defines Data Transfer Objects (DTOs) for user data and authentication requests/responses.
+
+**com/loansai/unassisted/data/model/camunda/**
+* `CamundaDto.kt`: Defines Data Transfer Objects (DTOs) for Camunda API requests and responses (`CamundaMessageRequest`, `CamundaVariable`, `ProcessInstanceResponse`).
+
+**com/loansai/unassisted/data/remote/api/**
+* `AIApi.kt`: Retrofit interface for API calls related to the AI assistant.
+* `AuthApi.kt`: Retrofit interface for authentication-related API calls (OTP request/verify).
+* `CamundaApi.kt`: Retrofit interface for interacting with the Camunda workflow engine API.
+* `DocumentApi.kt`: Retrofit interface for document-related API calls (upload, process, get, delete).
+* `EmployerApi.kt`: Retrofit interface for employer search and details API calls.
+* `LoanApi.kt`: Retrofit interface for loan application-related API calls (get, update, submit, calculate offer, etc.).
+* `PANApi.kt`: Retrofit interface for PAN verification and bureau report API calls.
+
+**com/loansai/unassisted/data/remote/interceptor/**
+* `AuthInterceptor.kt`: OkHttp Interceptor to add authentication tokens to outgoing requests.
+
+**com/loansai/unassisted/data/repository/**
+* `AIRepositoryImpl.kt`: Implementation of the `AIRepository` interface.
+* `BRERepositoryImpl.kt`: Implementation of the `BRERepository` interface, interacting with Firestore and Camunda.
+* `DocumentRepositoryImpl.kt`: Implementation of the `DocumentRepository` interface using Firestore, Firebase Storage, and WorkManager.
+* `EmployerRepositoryImpl.kt`: Implementation of the `EmployerRepository` interface using Firebase Realtime Database and caching.
+* `LoanRepositoryImpl.kt`: Implementation of the `LoanRepository` interface using API calls and Firestore.
+* `MetadataRepositoryImpl.kt`: Implementation of the `MetadataRepository` interface using Firestore.
+* `PANRepositoryImpl.kt`: Implementation of the `PANRepository` interface using API calls, Appwrite, and local caching.
+* `UserRepositoryImpl.kt`: Implementation of the `UserRepository` interface using Firebase Authentication and PreferencesDataSource.
+
+**com/loansai/unassisted/di/**
+* `AppModule.kt`: Dagger Hilt module for providing application-level dependencies like `PreferencesDataSource`.
+* `AppwriteModule.kt`: Dagger Hilt module for providing the Appwrite client dependency.
+* `FirebaseModule.kt`: Dagger Hilt module for providing Firebase service instances (Auth, Firestore, Storage, Database, Functions).
+* `OpenAIModule.kt`: Dagger Hilt module providing the OpenAI client dependency and API key.
+* `RepositoryModule.kt`: Dagger Hilt module that binds repository interfaces to their implementations.
+* `ServiceModule.kt`: Dagger Hilt module providing service dependencies (OCR, Voice Recognition, AI, Camunda, Appwrite, etc.).
+
+**com/loansai/unassisted/domain/model/**
+* `AIAssistantMessage.kt`: Defines data classes for AI assistant messages and conversations (`AIAssistantMessage`, `AIConversation`, `MessageType`).
+* `ApplicationStep.kt`: Defines an enum (`ApplicationStep`) representing the different steps in the loan application UI flow.
+* `AppMetadata.kt`: (Deprecated) Defines data classes for application metadata; notes indicate these are now in `MetadataModels.kt`.
+* `BREModels.kt`: Defines data classes related to the Business Rules Engine (BRE) input and output (`BREInput`, `BREOutput`, `BureauData`, etc.).
+* `BureauModels.kt`: Defines data classes related to credit bureau information (`BureauAddress`, `BureauAccountSummary`).
+* `BureauReport.kt`: Defines the main data class for the credit Bureau Report (`BureauReport`) and related enums/models.
+* `Document.kt`: Defines domain models related to documents (`Document`, `DocumentProcessingResult`, `BankStatementData`, etc.) and associated enums (`DocumentType`, `FileType`, etc.).
+* `EmploymentDetails.kt`: Defines domain models for employment details (`EmploymentDetails`, `Employer`) and related enums (`EmploymentType`, `EmployerCategory`, `VerificationMethod`).
+* `LoanApplication.kt`: Defines the core domain model for a `LoanApplication` and related enums (`ApplicationStatus`, `DecisionStatus`, `OfferStatus`).
+* `LoanOffer.kt`: Defines a UI-specific data class (`LoanOfferUI`) for displaying loan offers.
+* `LoanOfferStatus.kt`: Defines an enum (`LoanOfferStatus`) representing different statuses of a loan offer (likely deprecated or replaced by `OfferStatus` in `LoanApplication.kt`).
+* `MetadataModels.kt`: Defines domain models for various metadata types (`ScreenVisit`, `SectionTiming`, `DocumentEvent`, etc.) and the `MetadataRepository` interface.
+* `OCRScanState.kt`: Defines a sealed class (`OCRScanState`) representing the different states of an OCR scanning process.
+* `PANDetails.kt`: Defines domain models for PAN details (`PANDetails`) and payment history (`PaymentHistory`).
+* `PersonalInfo.kt`: Defines domain models for personal information (`PersonalInfo`, `Address`) and related enums (`MaritalStatus`, `AddressType`).
+* `User.kt`: Defines the domain model for a `User`.
+
+**com/loansai/unassisted/domain/repository/**
+* `AIRepository.kt`: Interface defining the repository for AI assistant data and operations.
+* `BRERepository.kt`: Interface defining the repository for Business Rules Engine (BRE) operations.
+* `DocumentRepository.kt`: Interface defining the repository for document operations (upload, process, get, delete).
+* `EmployerRepository.kt`: Interface defining the repository for employer data lookup.
+* `LoanRepository.kt`: Interface defining the repository for loan application data operations.
+* `PANRepository.kt`: Interface defining the repository for PAN verification and bureau report operations.
+* `UserRepository.kt`: Interface defining the repository for user authentication and management operations.
+
+**com/loansai/unassisted/domain/usecase/ai/**
+* `GetAIAssistanceUseCase.kt`: Domain use case for retrieving assistance or suggestions from the AI repository.
+
+**com/loansai/unassisted/domain/usecase/ai/impl/**
+* `GPTAIAssistantService.kt`: Implementation of `AIAssistantService` using the OpenAI GPT API.
+
+**com/loansai/unassisted/domain/usecase/application/**
+* `CreateApplicationUseCase.kt`: Domain use case for creating a new loan application.
+* `ResumeApplicationUseCase.kt`: Domain use case for resuming an existing loan application.
+* `SubmitApplicationUseCase.kt`: Domain use case for submitting a completed loan application.
+
+**com/loansai/unassisted/domain/usecase/auth/**
+* `SendOTPUseCase.kt`: Domain use case for sending an OTP to the user's phone number.
+* `VerifyOTPUseCase.kt`: Domain use case for verifying the OTP entered by the user.
+
+**com/loansai/unassisted/domain/usecase/document/**
+* `ParseDocumentUseCase.kt`: Domain use case for parsing and extracting information from a document using the `DocumentRepository`.
+* `UploadDocumentUseCase.kt`: Domain use case for uploading a document.
+
+**com/loansai/unassisted/domain/usecase/loan/**
+* `CalculateLoanOfferUseCase.kt`: Domain use case for calculating a loan offer (likely the original/fallback method).
+* `CalculateLoanOfferWithBREUseCase.kt`: Domain use case specifically for calculating a loan offer using the Business Rules Engine (BRE).
+
+**com/loansai/unassisted/domain/usecase/pan/**
+* `FetchBureauReportUseCase.kt`: Domain use case for fetching a credit bureau report using a PAN number.
+* `VerifyPANUseCase.kt`: Domain use case for verifying a PAN number using the `PANRepository`.
+
+**com/loansai/unassisted/domain/usecase/verification/**
+* `VerifyEmploymentUseCase.kt`: Domain use case for verifying employment details via email OTP or ID card.
+
+**com/loansai/unassisted/service/**
+* `DocumentProcessingService.kt`: Service class for processing documents, primarily images (compression, validation).
+* `DocumentUploadWorker.kt`: A WorkManager worker responsible for uploading documents in the background.
+
+**com/loansai/unassisted/service/ai/**
+* `AIAssistantService.kt`: Interface defining the contract for AI assistant services.
+
+**com/loansai/unassisted/service/appwrite/**
+* `AppwriteService.kt`: Interface defining the contract for interacting with the Appwrite service (client-side).
+
+**com/loansai/unassisted/service/appwrite/impl/**
+* `AppwriteServiceImpl.kt`: Implementation of `AppwriteService` using the Appwrite SDK and Firestore fallback.
+
+**com/loansai/unassisted/service/camunda/**
+* `CamundaService.kt`: Interface defining the contract for interacting with the Camunda service.
+
+**com/loansai/unassisted/service/camunda/impl/**
+* `CamundaServiceImpl.kt`: Implementation of the `CamundaService` interface.
+
+**com/loansai/unassisted/service/linkedin/**
+* `LinkedInService.kt`: (Obsolete/Marked for Removal) Service class for interacting with the LinkedIn API.
+
+**com/loansai/unassisted/service/ocr/**
+* `OCRService.kt`: Interface defining the contract for OCR services (text recognition, field extraction).
+* `OCRServiceSelector.kt`: Strategy class for selecting the appropriate `OCRService` implementation based on settings or document type.
+
+**com/loansai/unassisted/service/ocr/impl/**
+* `MLKitOCRService.kt`: Implementation of the `OCRService` interface using Google's ML Kit for text recognition.
+
+**com/loansai/unassisted/service/voice/**
+* `VoiceRecognitionService.kt`: Interface defining the contract for voice recognition services.
+
+**com/loansai/unassisted/service/voice/impl/**
+* `GoogleVoiceRecognitionService.kt`: Implementation of `VoiceRecognitionService` using Android's built-in SpeechRecognizer.
+
+**com/loansai/unassisted/ui/components/**
+* `AIAssistantBubble.kt`: Defines a composable UI component for the floating AI assistant bubble.
+* `AnimatedSections.kt`: Defines composable functions for animated UI sections (`AnimatedSections`, `AnimatedFormSection`, `CollapsibleSection`).
+* `BackNavigation.kt`: Defines composable functions for modern back navigation UI elements (`SwipeBackHandler`, `BackNavIndicator`, `ModernBackButton`).
+* `ContinuousFormContainer.kt`: Defines a composable container for a continuous scrolling form UI with a progress indicator.
+* `DatePickerComponents.kt`: Defines composable UI components for date and year selection (`DatePickerField`, `YearPickerField`).
+* `DocumentUploadCard.kt`: Defines composable UI components for displaying and managing document uploads (`DocumentUploadCard`, `EnhancedDocumentUploadCard`, etc.).
+* `EnhancedLoanTextField.kt`: Defines an enhanced text field composable with validation and micro-interactions.
+* `ErrorState.kt`: Defines composable UI components for displaying error and loading states (`ErrorState`, `LoadingState`).
+* `FormSectionProgress.kt`: Defines a composable UI component for displaying form section progress.
+* `HeaderWithToggle.kt`: Defines a composable UI component for a section header with an expand/collapse toggle icon.
+* `LoanOfferSlider.kt`: Defines composable UI components for loan offer sliders and EMI info display.
+* `LoanTextField.kt`: Defines a custom text field composable component tailored for the loan application.
+* `OCRScannerButton.kt`: Defines a composable button component specifically for initiating OCR scanning.
+* `ProgressStepper.kt`: Defines composable UI components for displaying progress steppers (horizontal and vertical).
+* `StateDropdown.kt`: Defines composable UI components for state selection dropdowns (`StateDropdown`, `StateSearchField`).
+* `VoiceInputButton.kt`: Defines a composable button component that integrates with the voice recognition service.
+
+**com/loansai/unassisted/ui/navigation/**
+* `AppNavGraph.kt`: Defines the application's navigation graph using Jetpack Navigation Compose.
+* `Screen.kt`: Defines a sealed class representing all navigable screens/routes in the application.
+
+**com/loansai/unassisted/ui/screens/documents/**
+* `DocumentUploadScreen.kt`: Composable function defining the UI for the document upload screen.
+* `DocumentViewModel.kt`: ViewModel managing the state and logic for the `DocumentUploadScreen`.
+
+**com/loansai/unassisted/ui/screens/employment/**
+* `EmploymentDetailsScreen.kt`: Composable function defining the UI for the employment details screen.
+* `EmploymentDetailsViewModel.kt`: ViewModel managing the state and logic for the `EmploymentDetailsScreen`.
+
+**com/loansai/unassisted/ui/screens/home/**
+* `HomeScreen.kt`: Composable function defining the UI for the main home screen after login.
+* `HomeViewModel.kt`: ViewModel managing the state and logic for the `HomeScreen`.
+
+**com/loansai/unassisted/ui/screens/login/**
+* `LoginScreen.kt`: Composable function defining the UI for the phone number login/OTP verification screen.
+* `LoginViewModel.kt`: ViewModel managing the state and logic for the `LoginScreen`.
+
+**com/loansai/unassisted/ui/screens/offer/**
+* `LoanOfferScreen.kt`: Composable function defining the UI for the loan offer display screen.
+* `LoanOfferViewModel.kt`: ViewModel managing the state and logic for the `LoanOfferScreen`.
+
+**com/loansai/unassisted/ui/screens/pan/**
+* `PANEntryScreen.kt`: Composable function defining the UI for the PAN entry and verification screen.
+* `PANViewModel.kt`: ViewModel managing the state and logic for the `PANEntryScreen`.
+
+**com/loansai/unassisted/ui/screens/personal/**
+* `PersonalInfoScreen.kt`: Composable function defining the UI for the personal information entry screen.
+* `PersonalInfoViewModel.kt`: ViewModel managing the state and logic for the `PersonalInfoScreen`.
+
+**com/loansai/unassisted/ui/screens/privacy/**
+* `PrivacyPolicyScreen.kt`: Composable function defining the UI for displaying the privacy policy.
+* `PrivacyPolicyViewModel.kt`: ViewModel managing the state and logic for the `PrivacyPolicyScreen`.
+
+**com/loansai/unassisted/ui/screens/settings/**
+* `SettingsScreen.kt`: Composable function defining the UI for the application settings screen.
+* `SettingsViewModel.kt`: ViewModel managing the state and logic for the `SettingsScreen`.
+
+**com/loansai/unassisted/ui/screens/splash/**
+* `SplashScreen.kt`: Composable function defining the UI for the initial splash screen.
+* `SplashViewModel.kt`: ViewModel managing the logic for the `SplashScreen`, checking authentication status.
+
+**com/loansai/unassisted/ui/screens/success/**
+* `ApplicationCompleteScreen.kt`: Composable function defining the UI for the application completion screen.
+* `ApplicationCompleteViewModel.kt`: ViewModel managing the state and logic for the `ApplicationCompleteScreen`.
+
+**com/loansai/unassisted/ui/screens/summary/**
+* `KeyFactSheetScreen.kt`: Composable function defining the UI for the Key Fact Sheet (review) screen.
+* `KeyFactSheetViewModel.kt`: ViewModel managing the state and logic for the `KeyFactSheetScreen`.
+
+**com/loansai/unassisted/ui/screens/verification/**
+* `EmploymentVerificationScreen.kt`: Composable function defining the UI for the employment verification screen.
+* `EmploymentVerificationViewModel.kt`: ViewModel managing the state and logic for the `EmploymentVerificationScreen`.
+* `VerificationMethod.kt`: Defines an enum (`VerificationMethod`) for different employment verification methods.
+
+**com/loansai/unassisted/ui/theme/**
+* `Color.kt`: Defines the color palette used in the application's theme.
+* `Shape.kt`: Defines custom shapes used in the application's theme (e.g., `CardShape`, `ButtonShape`).
+* `Theme.kt`: Defines the application's Material 3 theme, including color schemes and typography.
+* `Type.kt`: Defines the typography styles (font sizes, weights) used in the application's theme.
+
+**com/loansai/unassisted/util/**
+* `DateConverter.kt`: Utility object to convert between `LocalDateTime` and Firestore `Timestamp`.
+* `FileUtils.kt`: Utility object containing helper functions for file operations (creating temps, getting URIs, MIME types, etc.).
+
+**com/loansai/unassisted/util/constants/**
+* `ApiConstants.kt`: Contains constant values for API endpoints and network configurations.
+* `IndianStates.kt`: Utility object containing a list of Indian states and union territories.
+* `PreferenceConstants.kt`: Contains constant keys used for SharedPreferences and DataStore preferences.
+
+**com/loansai/unassisted/util/context/**
+* `ApplicationContextProvider.kt`: Utility object to provide application context and current activity reference, mainly for Firebase Auth.
+
+**com/loansai/unassisted/util/extensions/**
+* `FlowExtensions.kt`: Contains Kotlin extension functions for Flow, particularly for converting to a `Resource` flow.
+* `StringExtensions.kt`: Contains Kotlin extension functions for string validation and formatting (phone number, PAN, email, currency, etc.).
+
+**com/loansai/unassisted/util/logger/**
+* `AppLogger.kt`: Utility object providing a wrapper around Timber for standardized logging.
+
+**com/loansai/unassisted/util/validation/**
+* `InputValidator.kt`: Utility object providing functions to validate various user inputs (mobile number, PAN, email, name, DOB, etc.).
+
+**com/loansai/unassisted/viewmodel/**
+* `AIAssistantViewModel.kt`: ViewModel managing the state and interactions for the AI Assistant UI.

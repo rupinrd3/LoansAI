@@ -1,0 +1,67 @@
+%% v1.5 - Added Backend LLM API Functions
+flowchart TD
+    subgraph AndroidApp["Android App"]
+        App[Android Application]
+    end
+
+    subgraph Firestore["Firestore Database"]
+        Applications[applications Collection]
+        Metadata[metadata Subcollection]
+        Documents[documents Collection]
+        ObligationRefinement[obligationRefinement Subcollection]
+    end
+
+    subgraph CloudFunctions["Firebase Cloud Functions"]
+        subgraph MetadataOrchestrator["Metadata Orchestrator Functions"]
+            direction LR
+            M_ProcessEvent[processEvent (HTTP)]
+            M_CheckDropOffs[checkForDropOffs (Scheduled)]
+            M_SessionHandlers[onAppBackgrounded / onAppForegrounded (Alternative Trigger)]
+        end
+
+        subgraph BackendLlmApi["Backend LLM API Functions"]
+            direction LR
+            L_ProcessDoc[processDocument (HTTP)]
+            L_RecalcObligation[recalculateObligation (HTTP)]
+        end
+    end
+
+    subgraph ExternalServices["External Services"]
+        LLMService[LLM Service (Gemini)]
+        EmailService[Email Service (Brevo)]
+    end
+
+    %% App Interactions
+    App -->|POST Metadata Event| M_ProcessEvent
+    App -->|POST /processDocument| L_ProcessDoc
+    App -->|POST /recalculateObligation| L_RecalcObligation
+
+    %% Metadata Orchestrator Flow
+    M_ProcessEvent -->|Write Event| Metadata
+    M_ProcessEvent -->|Manage backgrounded_apps| Firestore
+    M_CheckDropOffs -->|Read| Applications
+    M_CheckDropOffs -->|Read| Metadata
+    M_CheckDropOffs -->|Read backgrounded_apps| Firestore
+    M_CheckDropOffs -->|If dropped off| LLMService
+    LLMService -- analysis --> M_CheckDropOffs
+    M_CheckDropOffs -->|Update Status| Applications
+    M_CheckDropOffs -->|Send Alert| EmailService
+
+    %% Backend LLM API Flow
+    L_ProcessDoc -->|Read Doc Info| Firestore
+    L_ProcessDoc -->|Call Gemini| LLMService
+    LLMService -- extracted data --> L_ProcessDoc
+    L_ProcessDoc -->|Write Extracted Data| Documents
+
+    L_RecalcObligation -->|Read Obligation Input| ObligationRefinement
+    L_RecalcObligation -->|Call Gemini| LLMService
+    LLMService -- recalculated obligation --> L_RecalcObligation
+    L_RecalcObligation -->|Write LLM Results| ObligationRefinement
+
+    %% Styling
+    style AndroidApp fill:#D1F2EB,stroke:#00796B,stroke-width:2px
+    style Firestore fill:#FFE0B2,stroke:#E65100,stroke-width:2px
+    style CloudFunctions fill:#BBDEFB,stroke:#0D47A1,stroke-width:2px
+    style MetadataOrchestrator fill:#C5CAE9,stroke:#1A237E,stroke-width:1px
+    style BackendLlmApi fill:#E1BEE7,stroke:#4A148C,stroke-width:1px
+    style ExternalServices fill:#DCEDC8,stroke:#33691E,stroke-width:2px

@@ -1,0 +1,148 @@
+Bureau Report data schema
+
+1. borrowers
+Each document represents one individual borrower, with nested arrays for addresses and contacts.
+
+
+{
+  "collection": "borrowers",
+  "attributes": {
+    "_id":             { "type": "string",  "description": "UUID" },
+    "control_number":  { "type": "string",  "description": "CIBIL Control Number" },
+    "report_date":     { "type": "date",    "description": "Date of this report" },
+    "cibil_score":     { "type": "integer", "description": "300–900; null if NH" },
+    "score_indicator": { "type": "string",  "description": "'NH' or null" },
+
+    "name":            { "type": "string",  "description": "Full name" },
+    "date_of_birth":   { "type": "date",    "description": "DD/MM/YYYY" },
+    "gender":          { "type": "string",  "description": "Male/Female/etc." },
+
+    "identification": {
+      "type": "object",
+      "properties": {
+        "id_type":     { "type": "string", "description": "e.g. PAN" },
+        "id_number":   { "type": "string", "description": "PAN number" },
+        "issue_date":  { "type": "date",   "description": "ID issue date" },
+        "expiry_date": { "type": "date",   "description": "ID expiry date" }
+      }
+    },
+
+    "addresses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "address_line":   { "type": "string" },
+          "city":           { "type": "string" },
+          "state":          { "type": "string" },
+          "postal_code":    { "type": "string" },
+          "category":       { "type": "string", "description": "Office/Residence/etc." },
+          "residence_code": { "type": "string", "description": "Code if any" },
+          "date_reported":  { "type": "date" }
+        }
+      }
+    },
+
+    "contacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type":      { "type": "string", "description": "Mobile/Office/Other" },
+          "number":    { "type": "string" },
+          "extension": { "type": "string", "description": "If applicable" }
+        }
+      }
+    },
+
+    "email": {
+      "type": "string",
+      "description": "Email ID"
+    },
+
+    "employment": {
+      "type": "object",
+      "properties": {
+        "account_type":               { "type": "string" },
+        "date_reported":              { "type": "date" },
+        "occupation":                 { "type": "string" },
+        "income":                     { "type": "number", "description": "Gross/Net" },
+        "monthly_annual_indicator":   { "type": "string" },
+        "net_gross_indicator":        { "type": "string" }
+      }
+    }
+  }
+}
+
+
+2. tradelines
+
+
+{
+    "collection": "tradelines",
+    "attributes": {
+      "_id":                { "type": "string",  "description": "UUID" },
+      "borrower_id":        { "type": "string",  "description": "FK to borrowers._id" },
+      "member_name":        { "type": "string" },
+      "account_type":       { "type": "string" },
+      "account_number":     { "type": "string" },
+      "ownership":          { "type": "string" },
+  
+      "credit_limit":       { "type": "number",  "nullable": true },
+      "high_credit":        { "type": "number",  "nullable": true },
+      "current_balance":    { "type": "number",  "nullable": true },
+      "cash_limit":         { "type": "number",  "nullable": true },
+      "amount_overdue":     { "type": "number",  "nullable": true },
+      "rate_of_interest":   { "type": "number",  "nullable": true },
+      "repayment_tenure":   { "type": "integer", "nullable": true },
+  
+      "emi_amount":         { "type": "number",  "nullable": true },
+      "payment_frequency":  { "type": "string",  "nullable": true },
+      "actual_payment":     { "type": "number",  "nullable": true },
+  
+      "date_opened":        { "type": "date" },
+      "date_closed":        { "type": "date",    "nullable": true },
+      "last_payment_date":  { "type": "date",    "nullable": true },
+      "date_reported":      { "type": "date" },
+  
+      "collateral_value":   { "type": "number", "nullable": true },
+      "collateral_type":    { "type": "string", "nullable": true },
+      "suit_filed":         { "type": "string", "nullable": true },
+      "facility_status":    { "type": "string", "nullable": true },
+  
+      "written_off_total":  { "type": "number", "nullable": true },
+      "written_off_principal": { "type": "number", "nullable": true },
+      "settlement_amount":  { "type": "number", "nullable": true },
+  
+      "payment_start":      { "type": "date",   "nullable": true },
+      "payment_end":        { "type": "date",   "nullable": true },
+  
+      "payment_history": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "period": { "type": "string", "description": "e.g. 'Feb 2015'" },
+            "status": { "type": "string", "description": "STD/XXX/etc." }
+          }
+        }
+      }
+    }
+  }
+
+  
+3. enquiries
+
+{
+    "collection": "enquiries",
+    "attributes": {
+      "_id":         { "type": "string",  "description": "UUID" },
+      "borrower_id": { "type": "string",  "description": "FK to borrowers._id" },
+      "enquiry_date":{ "type": "date" },
+      "member_name": { "type": "string" },
+      "purpose":     { "type": "string",  "nullable": true },
+      "type":        { "type": "string",  "nullable": true },
+      "amount":      { "type": "number",  "nullable": true }
+    }
+  }
+  

@@ -1,0 +1,59 @@
+sequenceDiagram
+    participant User as User
+    participant App as Android App
+    participant Firestore as Firestore DB
+    participant HttpFunction as HTTP Trigger Function
+    participant ScheduledFunction as Scheduled Function
+    participant LLM as LLM Service (Gemini/OpenAI)
+    participant Email as Email Service (Brevo)
+    
+    User->>App: Start App Session
+    App->>Firestore: Store APP_SESSION_START Event<br>(applications/{id}/metadata/{eventId})
+    App->>HttpFunction: Trigger Metadata Event (HTTP POST)
+    Note over App: Include deviceInfo in payload
+    
+    User->>App: Navigate to Screen
+    App->>Firestore: Store SCREEN_VISIT Event<br>(screenName, startTime)
+    App->>HttpFunction: Trigger Screen Visit Event
+    
+    User->>App: Complete Form Section
+    App->>Firestore: Store SECTION_COMPLETED Event<br>(screenName, sectionName, duration)
+    App->>HttpFunction: Trigger Section Completion Event
+    
+    User->>App: Upload Document
+    App->>Firestore: Store DOCUMENT_EVENT Event<br>(documentType, action, status)
+    App->>HttpFunction: Trigger Document Event
+    
+    User->>App: Put App in Background
+    App->>Firestore: Store APP_BACKGROUNDED Event
+    App->>HttpFunction: Trigger APP_BACKGROUNDED Event
+    
+    HttpFunction->>ScheduledFunction: Schedule Drop-off Check (30s)
+    Note over ScheduledFunction: After 30s, check for activity
+    
+    ScheduledFunction->>Firestore: Query for recent activity
+    
+    alt No Activity for >30 seconds
+        ScheduledFunction->>Firestore: Check Application Status
+        
+        alt Status = IN_PROGRESS
+            ScheduledFunction->>Firestore: Fetch Application Data
+            ScheduledFunction->>Firestore: Fetch Recent Metadata Events
+            ScheduledFunction->>+LLM: Send Drop-off Analysis Request
+            Note over LLM: Analyze Data for Drop-off Patterns
+            LLM-->>-ScheduledFunction: Drop-off Analysis (profile, rank, issues)
+            
+            ScheduledFunction->>Firestore: Update Status to DROPPED_OFF
+            ScheduledFunction->>+Email: Send Drop-off Summary
+            Email-->>-ScheduledFunction: Email Sent Confirmation
+        end
+    end
+    
+    alt User Returns Within Timeout
+        User->>App: Bring App to Foreground
+        App->>Firestore: Store APP_FOREGROUNDED Event
+        App->>HttpFunction: Trigger APP_FOREGROUNDED Event
+        Note over HttpFunction: Cancel pending Drop-off Check
+    end
+    
+    Note over User,Email: Async Processing Flow Completed

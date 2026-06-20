@@ -1,0 +1,303 @@
+Firestore Database Records
+
+
+1.] applications Collection
+
+
+Document: app-1746119243507
+metadata (map)
+applicationStatus: "SUBMITTED" (string)    
+breInputData: (map)    
+applicationId: "app-1746119243507" (string)    
+timestamp: 2 May 2025 at 04:07:23 UTC+5:30 (timestamp)    
+breOutputData: null (null)    
+bureauCurrentBalance: 0 (number)    
+bureauData (map) 
+creditScore: 810 (number)    
+currentBalance: 0 (number)    
+fetchedAt: 1 May 2025 at 22:37:36 UTC+5:30 (timestamp)    
+openAccounts: 2 (number)    
+totalAccounts: 2 (number)    
+  
+bureauOpenAccounts: 2 (number)    
+bureauReportFetched: true (Boolean)    
+bureauReportFetchedAt: 1 May 2025 at 22:37:36 UTC+5:30 (timestamp)    
+bureauScore: 810 (number)    
+bureauTotalAccounts: 2 (number)    
+completedSteps (array) 
+0: "PAN_VERIFICATION" (string)    
+1: "PERSONAL_INFO" (string)    
+2: "EMPLOYMENT_DETAILS" (string)    
+3: "DOCUMENT_UPLOAD" (string)    
+4: "LOAN_OFFER" (string)    
+5: "EMPLOYMENT_VERIFICATION" (string)    
+  
+createdAt: 2 May 2025 at 04:07:23 UTC+5:30 (timestamp)    
+currentStep: "KEY_FACT_SHEET" (string)    
+documentIds (array) 
+0: "765c0e56-adbd-40ff-8f90-2e08e8f0be87" (string)    
+1: "0c672024-c545-4e0f-a8c0-24b13cf832c5" (string)    
+2: "056e9454-de47-4bc8-91d6-704d71bde406" (string)    
+3: "77225816-cfd1-4688-bf15-38f4ecd2ea98" (string)    
+  
+employmentDetails (map) 
+department: null (null)    
+designation: null (null)    
+employeeId: null (null)    
+employerId: "company_619807" (string)    
+employerName: "QUALCOMM INDIA PRIVATE LIMITED" (string)    
+employmentType: "PRIVATE_SECTOR" (string)    
+isVerified: true (Boolean)    
+monthlyEmi: 20000 (number)    
+monthlySalary: 100000 (number)    
+officeAddress (map) 
+addressLine1: "Address" (string)    
+addressLine2: null (null)    
+addressType: "OFFICE" (string)    
+city: "Mumbai " (string)    
+country: "India" (string)    
+postalCode: "456789" (string)    
+state: "Maharashtra" (string)    
+  
+verificationMethod: "EMAIL" (string)    
+workEmail: "Rupin.desai@hdfcbank.com" (string)    
+  
+id: "app-1746119243507" (string)    
+lastUpdatedAt: 2 May 2025 at 04:13:00 UTC+5:30 (timestamp)    
+loanOffer: null (null)    
+metadata (map) 
+documentEvents (array) 
+0 (map) 
+action: "SCAN_ATTEMPT" (string)    
+cameraMetadata: null (null)    
+documentSourceType: "CAMERA" (string)    
+documentType: "PAN_CARD" (string)    
+eventId: "546f9b41-2dc3-4c23-8d23-ebe6a79731c9" (string)    
+extractionStatus: "EXTRACTED" (string)    
+failureReason: null (null)    
+fileMetadata (map) 
+fileName: "1000020929.jpg" (string)    
+fileSize: 192877 (number)    
+  
+status: "SUCCESS" (string)    
+timestamp: "2025-05-01T22:37:29.933110" (string)    
+  
+  
+sectionTimings (array) 
+0 (map) 
+durationSeconds: 6 (number)    
+endTime: 2 May 2025 at 04:12:01 UTC+5:30 (timestamp)    
+screenName: "LoanOfferScreen" (string)    
+sectionName: "LoanOfferCustomization" (string)    
+startTime: 2 May 2025 at 04:11:54 UTC+5:30 (timestamp)    
+  
+1 (map) 
+durationSeconds: 7 (number)    
+endTime: 2 May 2025 at 04:12:01 UTC+5:30 (timestamp)    
+screenName: "LoanOfferScreen" (string)    
+sectionName: "LoanOfferCustomization" (string)    
+startTime: 2 May 2025 at 04:11:54 UTC+5:30 (timestamp)    
+  
+  
+  
+mobileNumber: "0QiM3t0pNCNVf9LTs2M1TOleHah2" (string)    
+personalInfo (map) 
+address (map) 
+addressLine1: "address" (string)    
+addressLine2: null (null)    
+addressType: "CURRENT" (string)    
+city: "Mumbai" (string)    
+country: "India" (string)    
+postalCode: "123456" (string)    
+state: "Maharashtra" (string)    
+  
+alternatePhoneNumber: "9892098920" (string)    
+dateOfBirth: "1984-01-26" (string)    
+email: "[email address removed]" (string)    
+gender: "MALE" (string)    
+maritalStatus: null (null)    
+name: "RUPIN RAJESH DESAI" (string)    
+  
+submittedAt: 2 May 2025 at 04:13:00 UTC+5:30 (timestamp)    
+userId: "0QiM3t0pNCNVf9LTs2M1TOleHah2" (string)    
+
+
+1.1] metadata Subcollection (under applications)
+
+
+Document: 18abced4-33e2-4940-8fc1-8583f066399b
+applicationId: "app-1746119243507" (string)    
+documentEvent (map) 
+action: "LLM_PROCESSING" (string)    
+documentSourceType: "IMAGE_UPLOAD" (string)    
+documentType: "INCOME_TAX_RETURN" (string)    
+extractionStatus: "SUCCESS" (string)    
+failureReason: null (null)    
+fileMetadata: null (null)    
+status: "SUCCESS" (string)    
+timestamp: 2 May 2025 at 04:10:24 UTC+5:30 (timestamp)    
+  
+eventId: "18abced4-33e2-4940-8fc1-8583f066399b" (string)    
+eventTimestamp: 2 May 2025 at 04:10:24 UTC+5:30 (timestamp)    
+eventType: "DOCUMENT_EVENT" (string)    
+Document: 4e6cdd53-42aa-44dc-9438-c5253cf191f4
+applicationId: "app-1746119243507" (string)    
+eventId: "4e6cdd53-42aa-44dc-9438-c5253cf191f4" (string)    
+eventTimestamp: 2 May 2025 at 04:09:29 UTC+5:30 (timestamp)    
+eventType: "LLM_CALL_COMPLETED" (string)    
+llmInteraction (map) 
+failureReason: null (null)    
+llmCallType: "DOC_PROCESSING_GEMINI" (string)    
+modelUsed: "gemini-2.5-flash-preview-04-17" (string)    
+status: "COMPLETED" (string)    
+timestamp: 2 May 2025 at 04:09:29 UTC+5:30 (timestamp)    
+  
+Document: dbe67f1e-8e9e-4ddf-a328-2a7b425e82c1
+applicationId: "app-1746119243507" (string)    
+documentEvent (map) 
+action: "FILE_SELECTED" (string)    
+documentSourceType: "IMAGE_UPLOAD" (string)    
+documentType: "INCOME_TAX_RETURN" (string)    
+extractionStatus: null (null)    
+failureReason: null (null)    
+fileMetadata (map) 
+fileName: "income tax return sample.jpg" (string)    
+fileSize: 129871 (number)    
+  
+status: "SUCCESS" (string)    
+timestamp: 2 May 2025 at 04:10:18 UTC+5:30 (timestamp)    
+  
+eventId: "dbe67f1e-8e9e-4ddf-a328-2a7b425e82c1" (string)    
+eventTimestamp: 2 May 2025 at 04:10:18 UTC+5:30 (timestamp)    
+eventType: "DOCUMENT_EVENT" (string)    
+
+2.] documents Collection
+
+
+(Note: There appear to be document upload timestamps listed before the document details)
+
+"2025-05-01T22:39:13.081435": 765c0e56-adbd-40ff-8f90-2e08e8f0be87    
+"2025-05-01T22:39:52.178341": 0c672024-c545-4e0f-a8c0-24b13cf832c5    
+"2025-05-01T22:40:07.435609": 056e9454-de47-4bc8-91d6-704d71bde406    
+"2025-05-01T22:40:23.205630": 77225816-cfd1-4688-bf15-38f4ecd2ea98    
+Document: 765c0e56-adbd-40ff-8f90-2e08e8f0be87
+applicationId: "app-1746119243507" (string)    
+documentSourceType: "PDF_UPLOAD" (string)    
+documentStatus: "PROCESSED" (string)    
+documentType: "BANK_STATEMENT" (string)    
+extractedData (map) 
+accountHolderName: "Mr. APURBA ROY" (string)    
+accountNumber: "**********3504" (string)    
+bankName: "Bandhan Bank" (string)    
+closingBalance: 5486 (number)    
+openingBalance: 5000 (number)    
+statementPeriodEnd: "2023-08-28" (string)    
+statementPeriodStart: "2023-08-01" (string)    
+totalCredits: 4987.44 (number)    
+totalDebits: 6500 (number)    
+  
+extractionStatus: "SUCCESS" (string)    
+failureReason: null (null)    
+fileName: "bandhan-bank-statement.pdf" (string)    
+fileSize: 0 (number)    
+fileType: "PDF" (string)    
+id: "765c0e56-adbd-40ff-8f90-2e08e8f0be87" (string)    
+lastUpdatedAt: 1 May 2025 at 22:39:29 UTC+5:30 (timestamp)    
+processedAt: 1 May 2025 at 22:39:29 UTC+5:30 (timestamp)    
+storageUrl: https://firebasestorage.googleapis.com/v0/b/loansai.firebasestorage.app/o/applications%2Fapp-1746119243507%2Fdocuments%2F765c0e56-adbd-40ff-8f90-2e08e8f0be87?alt=media&token=00887cdd-16b1-4019-929d-5d73d6322269 (string)    
+uploadedAt: "2025-05-01T22:39:13.081435" (string)    
+userId: "0QiM3t0pNCNVf9LTs2M1TOleHah2" (string)    
+Document: 0c672024-c545-4e0f-a8c0-24b13cf832c5
+applicationId: "app-1746119243507" (string)    
+documentSourceType: "PDF_UPLOAD" (string)    
+documentStatus: "PROCESSED" (string)    
+documentType: "SALARY_SLIP" (string)    
+extractedData (map) 
+basicSalary: 23570 (number)    
+companyName: "Infosys Limited, Bangalore" (string)    
+employeeId: "629595" (string)    
+employeeName: "Ashok Mallappa Naik" (string)    
+grossSalary: 117201 (number)    
+month: "2019-02-01" (string)    
+netSalary: 38879 (number)    
+totalDeductions: 78322 (number)    
+  
+extractionStatus: "SUCCESS" (string)    
+failureReason: null (null)    
+fileName: "Infosys salary slip.pdf" (string)    
+fileSize: 0 (number)    
+fileType: "PDF" (string)    
+id: "0c672024-c545-4e0f-a8c0-24b13cf832c5" (string)    
+lastUpdatedAt: 1 May 2025 at 22:39:52 UTC+5:30 (timestamp)    
+processedAt: 1 May 2025 at 22:39:52 UTC+5:30 (timestamp)    
+storageUrl: https://firebasestorage.googleapis.com/v0/b/loansai.firebasestorage.app/o/applications%2Fapp-1746119243507%2Fdocuments%2F0c672024-c545-4e0f-a8c0-24b13cf832c5?alt=media&token=247ab4fe-bf0b-4082-89ca-6f28f31408d4 (string)    
+uploadedAt: "2025-05-01T22:39:52.178341" (string)    
+userId: (missing value)    
+Document: 056e9454-de47-4bc8-91d6-704d71bde406
+applicationId: "app-1746119243507" (string)    
+documentSourceType: "PDF_UPLOAD" (string)    
+documentStatus: "PROCESSED" (string)    
+documentType: "FORM_26AS" (string)    
+extractedData (map) 
+assessmentYear: "2018-19" (string)    
+name: "SOMESHWAR TRADING PVT LTD" (string)    
+panNumber: "AAHCS8788D" (string)    
+totalTdsDeducted: 13200 (number)    
+totalTdsDeposited: 13200 (number)    
+  
+extractionStatus: "SUCCESS" (string)    
+failureReason: null (null)    
+fileName: "Form 26AS 1.pdf" (string)    
+fileSize: 0 (number)    
+fileType: "PDF" (string)    
+id: "056e9454-de47-4bc8-91d6-704d71bde406" (string)    
+lastUpdatedAt: 1 May 2025 at 22:40:07 UTC+5:30 (timestamp)    
+processedAt: 1 May 2025 at 22:40:07 UTC+5:30 (timestamp)    
+storageUrl: https://firebasestorage.googleapis.com/v0/b/loansai.firebasestorage.app/o/applications%2Fapp-1746119243507%2Fdocuments%2F056e9454-de47-4bc8-91d6-704d71bde406?alt=media&token=5c469785-2e18-44c8-9bce-5c012ed4bbdc (string)    
+uploadedAt: "2025-05-01T22:40:07.435609" (string)    
+userId: "0QiM3t0pNCNVf9LTs2M1TOleHah2" (string)    
+Document: 77225816-cfd1-4688-bf15-38f4ecd2ea98
+applicationId: "app-1746119243507" (string)    
+documentSourceType: "PDF_UPLOAD" (string)    
+documentStatus: "PROCESSED" (string)    
+documentType: "INCOME_TAX_RETURN" (string)    
+extractedData (map) 
+assessmentYear: "2022-23" (string)    
+filingDate: "2022-07-30" (string)    
+grossTotalIncome: 396720 (number)    
+name: "CHIDAMBARAM NACHIMUTHU GOUNDER" (string)    
+panNumber: "AADHC9430P" (string)    
+taxPayable: 7629 (number)    
+taxableIncome: 396720 (number)    
+  
+extractionStatus: "SUCCESS" (string)    
+failureReason: null (null)    
+fileName: "income tax return sample.jpg" (string)    
+fileSize: 0 (number)    
+fileType: "JPG" (string)    
+id: "77225816-cfd1-4688-bf15-38f4ecd2ea98" (string)    
+lastUpdatedAt: 1 May 2025 at 22:40:24 UTC+5:30 (timestamp)    
+processedAt: 1 May 2025 at 22:40:24 UTC+5:30 (timestamp)    
+storageUrl: https://firebasestorage.googleapis.com/v0/b/loansai.firebasestorage.app/o/applications%2Fapp-1746119243507%2Fdocuments%2F77225816-cfd1-4688-bf15-38f4ecd2ea98?alt=media&token=64cf9b56-863c-44b5-9ea0-406911110df5 (string)    
+uploadedAt: "2025-05-01T22:40:23.205630" (string)    
+userId: "0QiM3t0pNCNVf9LTs2M1TOleHah2" (string)    
+
+3.] employment_verifications Collection
+
+Document: app-1746119243507
+applicationId: "app-1746119243507" (string)    
+isVerified: true (Boolean)    
+verificationMethod: "EMAIL" (string)    
+verifiedAt: 1 May 2025 at 22:42:14 UTC+5:30 (timestamp)    
+verifiedEmail: "Rupin.desai@hdfcbank.com" (string)    
+
+4.] otps Collection
+
+Document: Rupin.desai@hdfcbank.com
+createdAt: 1 May 2025 at 22:42:03 UTC+5:30 (timestamp)    
+email: "Rupin.desai@hdfcbank.com" (string)    
+expiresAt: 1 May 2025 at 22:57:03 UTC+5:30 (timestamp)    
+isVerified: false (Boolean)    
+otp: "123456" (string)    
+
+Sources and related content

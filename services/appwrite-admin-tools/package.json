@@ -1,0 +1,17 @@
+{
+  "name": "appwrite-database-setup",
+  "version": "1.0.0",
+  "description": "Setup script for Appwrite database collections for Personal Loan Android Application",
+  "main": "setup-appwrite-collections.js",
+  "scripts": {
+    "setup": "node setup-appwrite-collections.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "node-appwrite": "^11.1.1"
+  },
+  "author": "",
+  "license": "ISC",
+  "keywords": []
+}

@@ -1,0 +1,143 @@
+%% v1.5 - Added Obligation Refinement Subcollection & LLM Event Types
+erDiagram
+    APPLICATIONS ||--o{ METADATA : contains
+    APPLICATIONS ||--o{ DOCUMENTS : has
+    APPLICATIONS ||--o{ OBLIGATION_REFINEMENT : has_refinement_attempts
+
+    APPLICATIONS {
+        string id PK
+        string userId FK
+        string applicationStatus
+        string currentStep "Enum: ApplicationStep (incl. BUREAU_CONFIRMATION)"
+        array completedSteps "List<String> (Enum: ApplicationStep)"
+        map personalInfo
+        map employmentDetails
+        map breInputData "May contain llmRecalculatedObligation"
+        map breOutputData
+        map loanOffer
+        array documentIds "List<String>"
+        timestamp createdAt
+        timestamp lastUpdatedAt
+        timestamp submittedAt
+        timestamp finalDecisionAt
+        string bureauFetchStatus "Optional"
+        number bureauScore "Optional"
+    }
+
+    DOCUMENTS {
+        string id PK
+        string applicationId FK
+        string userId FK
+        string documentType "Enum: DocumentType"
+        string documentSourceType "Enum: DocumentSourceType"
+        string documentStatus "Enum: DocumentStatus"
+        string fileName
+        number fileSize "bytes"
+        string fileType "Enum: FileType"
+        string storageUrl "Nullable"
+        timestamp uploadedAt
+        timestamp processedAt "Nullable, Set by Backend LLM API"
+        string extractionStatus "Nullable, Enum: ExtractionStatus, Set by Backend LLM API"
+        map extractedData "Nullable, Optional LLM extracted fields (See Data Catalog)"
+        string failureReason "Nullable"
+        map cameraMetadata "Nullable"
+    }
+
+    METADATA {
+        string eventId PK "UUID"
+        string applicationId FK
+        timestamp eventTimestamp "Server Timestamp"
+        string eventType "Enum: MetadataEventType (incl. OBLIGATION*, LLM*)"
+        map eventData "Structure depends on eventType"
+    }
+
+    OBLIGATION_REFINEMENT {
+        string recordId PK "UUID"
+        string applicationId FK
+        timestamp createdAt "App Timestamp"
+        map userProvidedEmis "Map<String, Number>"
+        string userComments "Nullable"
+        number llmRecalculatedObligation "Nullable, Populated by Backend LLM API"
+        array llmExcludedLoans "Nullable, List<Map<String, String>>, Populated by Backend LLM API"
+        string llmProcessingStatus "Nullable, Enum: LlmProcessingStatus"
+        timestamp llmProcessedAt "Nullable"
+    }
+
+    %% Event Data Examples (Conceptual, details in Catalog)
+    SCREEN_VISIT_EVENT {
+        string screenName
+        timestamp startTime
+        timestamp endTime "Nullable"
+        number durationSeconds
+    }
+
+    SECTION_TIMING_EVENT {
+        string screenName
+        string sectionName
+        timestamp startTime
+        timestamp endTime "Nullable"
+        number durationSeconds
+    }
+
+    DOCUMENT_EVENT {
+        string action
+        string documentType
+        string documentSourceType
+        string status "Nullable"
+        string extractionStatus "Nullable"
+        string failureReason "Nullable"
+        map cameraMetadata "Nullable"
+        map fileMetadata "Nullable"
+        timestamp timestamp
+    }
+
+    APP_SESSION_EVENT {
+        map deviceInfo "Nullable"
+        timestamp startTime
+        timestamp endTime "Nullable"
+        number durationSeconds "Nullable"
+        boolean droppedOff "Nullable"
+        timestamp dropOffTimestamp "Nullable"
+    }
+
+    OBLIGATION_EVENT {
+       string refinementRecordId
+       string status "e.g., SUBMITTED, LLM_SUCCESS, LLM_FAILED"
+    }
+
+    LLM_INTERACTION_EVENT {
+        string llmCallType "DOC_PROCESSING or OBLIGATION_RECALC or DROPOFF_ANALYSIS"
+        string status "INITIATED, COMPLETED, FAILED"
+        string modelUsed "Nullable"
+        string failureReason "Nullable"
+        timestamp timestamp
+    }
+
+    EMPLOYMENT_VERIFICATIONS {
+        string verificationId PK
+        string applicationId FK
+        string verificationMethod "Enum: VerificationMethod"
+        string status "Enum: VerificationStatus"
+        boolean isVerified
+        timestamp initiatedAt
+        timestamp verifiedAt "Nullable"
+        string verifiedEmail "Nullable"
+        string details "Nullable"
+    }
+
+    OTPS {
+        string targetIdentifier PK "Email or Phone"
+        string otp "Hashed ideally"
+        boolean isVerified
+        timestamp createdAt
+        timestamp expiresAt
+        number attemptCount
+    }
+
+    METADATA ||--|{ SCREEN_VISIT_EVENT : contains_type
+    METADATA ||--|{ SECTION_TIMING_EVENT : contains_type
+    METADATA ||--|{ DOCUMENT_EVENT : contains_type
+    METADATA ||--|{ APP_SESSION_EVENT : contains_type
+    METADATA ||--|{ OBLIGATION_EVENT : contains_type
+    METADATA ||--|{ LLM_INTERACTION_EVENT : contains_type
+    %% Other event types exist (Verification, Error, etc.)

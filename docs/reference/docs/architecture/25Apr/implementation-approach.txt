@@ -1,0 +1,134 @@
+# Implementation Approach for v1.3 Architecture
+
+## Recommended Architecture Approach
+
+For your loan application system, we recommend a hybrid approach:
+
+1. **Camunda Platform 8** - For loan processing workflow (BRE orchestration)
+2. **Firebase Cloud Functions** - For metadata collection and drop-off detection
+
+This leverages the strengths of both platforms while keeping implementation complexity manageable.
+
+## Implementation Plan
+
+### 1. Camunda for BRE Process (Keep as is)
+
+Continue using Camunda for the single-pass BRE workflow:
+
+- **Purpose:** Orchestrate the loan approval process 
+- **Key Interactions:**
+  - Triggering bureau data fetch from Appwrite
+  - Assigning tasks to Python BRE
+  - Managing the loan decision workflow
+  - Updating application status in Firestore
+
+The single-pass BPMN workflow will look like:
+1. Start → 
+2. Get Bureau Data (Service Task) → 
+3. Calculate Loan Offer (External Task) → 
+4. Decision Gateway → 
+5. Appropriate End Event
+
+### 2. Firebase Cloud Functions for Metadata (New Implementation)
+
+Use Firebase Cloud Functions as the Metadata Orchestrator:
+
+- **Purpose:** Process metadata events and detect drop-offs
+- **Key Functions:**
+  1. **HTTP-triggered functions** for receiving events from app
+  2. **Firestore-triggered functions** for reacting to new metadata
+  3. **Scheduled functions** for checking inactivity and drop-offs
+
+### 3. Integration Approach
+
+Both systems will work independently but coordinate through Firestore:
+
+- **Camunda→Firestore:** Updates application status and BRE results
+- **Cloud Functions→Firestore:** Stores metadata events and updates drop-off status
+- **App→Camunda:** Initiates loan processing workflow
+- **App→Cloud Functions:** Sends metadata events
+
+## Implementation Steps
+
+1. **Configure Firestore:**
+   - Create `metadata` subcollection under `applications/{id}`
+   - Set up appropriate security rules
+
+2. **Implement Cloud Functions:**
+   - Create HTTP endpoints for receiving metadata events
+   - Implement scheduled function for drop-off detection
+   - Set up LLM integration for drop-off analysis
+
+3. **Update Android App:**
+   - Add metadata collection points in key UI components
+   - Implement HTTP calls to Cloud Functions
+   - Keep Camunda integration as is
+
+4. **Keep Camunda Integration:**
+   - Update BPMN model for single-pass flow
+   - Ensure Python BRE worker connects properly
+   - Configure Camunda to access Appwrite bureau data
+
+## Example: Android App Integration
+
+The Android app will need to integrate with both systems:
+
+```kotlin
+// Example code for handling both systems
+
+class LoanApplicationViewModel @Inject constructor(
+    private val loanRepository: LoanRepository,
+    private val camundaService: CamundaService,
+    private val metadataRepository: MetadataRepository
+) : ViewModel() {
+    
+    // Start loan process (Camunda)
+    fun startLoanProcess(applicationId: String) {
+        viewModelScope.launch {
+            camundaService.startLoanApplicationProcess(
+                applicationId = applicationId,
+                panNumber = currentApplication.value?.panDetails?.panNumber ?: ""
+            ).collect { result ->
+                // Handle result...
+            }
+        }
+    }
+    
+    // Track screen visit (Firebase Cloud Functions)
+    fun trackScreenVisit(screenName: String) {
+        viewModelScope.launch {
+            val applicationId = currentApplication.value?.id ?: return@launch
+            
+            val startTime = LocalDateTime.now()
+            
+            // Store for tracking duration when screen is left
+            currentScreenData = ScreenVisitData(
+                screenName = screenName,
+                startTime = startTime
+            )
+            
+            // Log the event
+            metadataRepository.sendMetadataEvent(
+                applicationId = applicationId,
+                eventType = "SCREEN_VISIT",
+                eventData = mapOf(
+                    "screenVisit" to mapOf(
+                        "screenName" to screenName,
+                        "startTime" to startTime
+                    )
+                )
+            )
+        }
+    }
+}
+```
+
+## Advantages of This Approach
+
+1. **Specialization:** Each system does what it does best
+2. **Scalability:** Independent scaling of each component
+3. **Maintainability:** Clearer separation of concerns
+4. **Future-proofing:** Easier to evolve each part independently
+5. **Development Efficiency:** More straightforward implementation
+
+This approach gives you the best of both worlds while being practical to implement, especially if you're a beginner at coding.

@@ -1,0 +1,66 @@
+flowchart TD
+    subgraph AndroidApp["Android App"]
+        App[Android Application]
+    end
+    
+    subgraph Firestore["Firestore Database"]
+        Applications[applications Collection]
+        Metadata[metadata Subcollection]
+    end
+    
+    subgraph CloudFunctions["Firebase Cloud Functions"]
+        subgraph HttpFunctions["HTTP Triggered Functions"]
+            ProcessEvent[processMetadataEvent]
+            RecordScreenVisit[recordScreenVisit]
+            RecordSectionTiming[recordSectionTiming]
+            RecordDocumentEvent[recordDocumentEvent]
+            RecordAppSession[recordAppSession]
+        end
+        
+        subgraph ScheduledFunctions["Scheduled Functions"]
+            CheckDropOffs[checkForDropOffs]
+        end
+        
+        subgraph FirestoreTriggers["Firestore Triggered Functions"]
+            OnBackgrounded[onAppBackgrounded]
+            OnForegrounded[onAppForegrounded]
+        end
+    end
+    
+    subgraph ExternalServices["External Services"]
+        LLMService[LLM Service]
+        EmailService[Email Service]
+    end
+    
+    App -->|POST /processEvent| ProcessEvent
+    App -->|POST /recordScreenVisit| RecordScreenVisit
+    App -->|POST /recordSectionTiming| RecordSectionTiming
+    App -->|POST /recordDocumentEvent| RecordDocumentEvent
+    App -->|POST /recordAppSession| RecordAppSession
+    
+    ProcessEvent -->|Write to| Metadata
+    RecordScreenVisit -->|Write to| Metadata
+    RecordSectionTiming -->|Write to| Metadata
+    RecordDocumentEvent -->|Write to| Metadata
+    RecordAppSession -->|Write to| Metadata
+    
+    RecordAppSession -->|If APP_BACKGROUNDED| OnBackgrounded
+    RecordAppSession -->|If APP_FOREGROUNDED| OnForegrounded
+    
+    OnBackgrounded -->|Schedule after 30s| CheckDropOffs
+    OnForegrounded -->|Cancel scheduled| CheckDropOffs
+    
+    CheckDropOffs -->|Read| Applications
+    CheckDropOffs -->|Read| Metadata
+    CheckDropOffs -->|If dropped off| LLMService
+    LLMService -->|Return analysis| CheckDropOffs
+    CheckDropOffs -->|Send summary| EmailService
+    CheckDropOffs -->|Update status| Applications
+    
+    style AndroidApp fill:#a4c639,stroke:#333,stroke-width:2px
+    style Firestore fill:#FFCA28,stroke:#333,stroke-width:2px
+    style CloudFunctions fill:#FF9800,stroke:#333,stroke-width:2px
+    style HttpFunctions fill:#FFB74D,stroke:#333,stroke-width:1px
+    style ScheduledFunctions fill:#FFB74D,stroke:#333,stroke-width:1px
+    style FirestoreTriggers fill:#FFB74D,stroke:#333,stroke-width:1px
+    style ExternalServices fill:#34A853,stroke:#333,stroke-width:2px
