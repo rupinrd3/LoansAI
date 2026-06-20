@@ -100,10 +100,13 @@ loansai/
 ├── apps/
 │   └── mobile-android/         # Complete Native Kotlin Android Application
 │       ├── app/src/main/java/com/loansai/unassisted/
-│       │   ├── data/           # Repositories, Local DB (Room/DataStore), and API Clients (Retrofit)
+│       │   ├── data/           # Repositories, Local DB (DataStore), and API Clients (Retrofit)
+│       │   ├── di/             # Hilt Dependency Injection Modules
 │       │   ├── domain/         # Clean Architecture Use Cases and Business Logic Interfaces
-│       │   ├── presentation/   # Jetpack Compose UI Screens, ViewModels, and Navigation
-│       │   └── util/           # Constants, AI Integration Helpers, and Security Interceptors
+│       │   ├── service/        # Background Services and specialized components
+│       │   ├── ui/             # Jetpack Compose UI Screens, theme, and Navigation
+│       │   ├── util/           # Constants, AI Integration Helpers, and Security Interceptors
+│       │   └── viewmodel/      # Architecture Components ViewModels
 │       └── build.gradle.kts    # App-level dependencies and build config
 ├── services/
 │   ├── bre-python/             # Python Flask Underwriting Engine (Risk matrices, FOIR logic)
