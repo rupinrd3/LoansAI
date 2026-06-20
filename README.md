@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚀 LoansAI - Digital Loan Application & Decisioning Platform
+# <img src="apps/mobile-android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" width="40" align="center" alt="App Icon"> LoansAI - Digital Loan Application & Decisioning Platform
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9-purple.svg?style=flat-square&logo=kotlin)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-1.6-blue.svg?style=flat-square&logo=android)](https://developer.android.com/compose)
@@ -38,29 +38,29 @@ By bridging an advanced native mobile experience with a multi-layered backend, t
 The platform architecture is divided into three main layers: Client (Mobile), Backend Services, and External Communications.
 
 ```mermaid
-graph TD
-    subgraph "📱 Client Layer"
-        Android["Android App<br/>(Kotlin/Compose)"]
-        OCR["ML Kit OCR<br/>(Local Text Parsing)"]
-        Android -.->|"Text Extraction"| OCR
+flowchart TD
+    subgraph Client ["📱 Client Layer"]
+        Android[Android App]
+        OCR[ML Kit OCR]
+        Android -.->|Local Parsing| OCR
     end
     
-    subgraph "☁️ Backend Services"
-        Firebase["Firebase<br/>(Auth, Firestore, Functions)"]
-        Appwrite["Appwrite<br/>(Mock Bureau DB API)"]
-        BRE["Python BRE<br/>(Underwriting Engine)"]
+    subgraph Backend ["☁️ Backend Services"]
+        Firebase[Firebase Backend]
+        Appwrite[Appwrite Mock DB]
+        BRE[Python BRE Engine]
     end
     
-    subgraph "🌐 External APIs"
-        Brevo["Brevo API<br/>(SMTP/Email)"]
-        Gemini["Gemini API<br/>(LLM Extraction)"]
+    subgraph External ["🌐 External APIs"]
+        Brevo[Brevo SMTP]
+        Gemini[Gemini LLM API]
     end
     
-    Android -->|"App State & Docs"| Firebase
-    Android -->|"Bureau Profiles"| Appwrite
-    Android -->|"POST /calculate-offer"| BRE
-    Android -->|"Structured parsing"| Gemini
-    Firebase -->|"Cloud-to-Cloud OTP Trigger"| Brevo
+    Android -->|State & Docs| Firebase
+    Android -->|Bureau Profiles| Appwrite
+    Android -->|Calculate Offer| BRE
+    Android -->|Document AI Parsing| Gemini
+    Firebase -->|Trigger OTP| Brevo
 ```
 
 <details>
