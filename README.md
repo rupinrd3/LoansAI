@@ -19,17 +19,19 @@ An educational reference project demonstrating a modern, end-to-end digital lend
 
 ## 📖 About The Project
 
-LoansAI is a comprehensive showcase of a digital lending platform. It integrates guided user onboarding, automated PAN verification, simulated bureau credit-score lookups, on-device OCR, AI-assisted financial document extraction, a rule-based Business Rules Engine (BRE), and OTP-based email workflows.
+LoansAI is a comprehensive showcase of a full, end-to-end digital lending ecosystem engineered from the ground up. This project goes far beyond a simple frontend application—it demonstrates the orchestration of a complete loan processing pipeline. The developer has integrated an online Business Rules Engine (BRE), external mock bureau databases connected via REST API services, a real-time cloud application data store for managing user applications, and sophisticated cloud-to-cloud processing to securely orchestrate verification workflows.
 
-This repository serves as a **learning sandbox** for developers exploring mobile-to-backend architectures, rule engines, document classification, and AI/LLM structured text extraction within a financial context.
+By bridging an advanced native mobile experience with a multi-layered backend, this platform handles the complete customer journey: from guided OTP-based onboarding and live AI-driven document extraction, to automated credit scoring lookups and instantaneous programmatic underwriting. This repository serves as a robust **learning sandbox** for developers exploring scalable mobile-to-backend architectures, cloud-native deployments, and the intersection of specialized AI with financial rule engines.
 
 ## ✨ Key Features
 
-*   **📱 Native Android App**: Built with modern Kotlin, Jetpack Compose, and Clean Architecture principles (MVVM, Usecases, Repositories).
-*   **🤖 AI-Powered Document Processing**: Leverages Google's Gemini API and ML Kit OCR for on-device extraction of structured data from Salary Slips, Bank Statements, and ITRs.
-*   **⚙️ Business Rules Engine (BRE)**: A Python Flask microservice that performs core underwriting decisions based on FOIR, CIBIL scores, and income calculations.
-*   **📊 Bureau Integration Simulation**: Appwrite-based mock databases to simulate credit bureau profiles, tradelines, and score lookups.
-*   **🔐 Secure Onboarding**: OTP-based email authentication workflows orchestrated via Firebase and Brevo API.
+*   **🤖 Deep AI Integrations for Financial Workflows**:
+    *   **Google Gemini LLM**: Utilized to intelligently parse unstructured financial text into standardized JSON schemas. It maps complex attributes from diverse bank statements, salary slips, and Income Tax Returns (ITR) into uniform data points required by the BRE.
+    *   **ML Kit On-Device OCR**: Runs entirely locally on the mobile device to extract raw text blocks from camera captures and document uploads with ultra-low latency and privacy preservation before sending them to the LLM.
+*   **📱 Native Android Application**: Built with modern Kotlin, Jetpack Compose, and Clean Architecture principles (MVVM, Usecases, Repositories), ensuring a fluid and reactive user experience.
+*   **⚙️ Online Business Rules Engine (BRE)**: A dedicated Python Flask microservice acting as the underwriting brain. It performs programmatic core risk decisions, calculating Fixed Obligation to Income Ratios (FOIR), evaluating CIBIL scores against risk matrices, and determining final loan eligibilities, indicative rates, and maximum limits.
+*   **📊 External Bureau Integration via API Services**: A fully-fledged mock Database setup using Appwrite. It provides API-driven services to simulate real-time credit bureau profiles, multi-account tradeline fetching, and hard-pull score lookups.
+*   **☁️ Cloud Data & Cloud-to-Cloud Processing**: Firebase Firestore acts as the central real-time application data store, tightly coupled with Firebase Cloud Functions that execute secure server-to-server (cloud-to-cloud) interactions—such as triggering the external Brevo API for transactional OTP email verification and managing ephemeral application state data securely.
 
 ## 🏛️ System Architecture
 
@@ -45,7 +47,7 @@ graph TD
     
     subgraph "☁️ Backend Services"
         Firebase["Firebase<br/>(Auth, Firestore, Functions)"]
-        Appwrite["Appwrite<br/>(Mock Bureau DB)"]
+        Appwrite["Appwrite<br/>(Mock Bureau DB API)"]
         BRE["Python BRE<br/>(Underwriting Engine)"]
     end
     
@@ -58,7 +60,7 @@ graph TD
     Android -->|"Bureau Profiles"| Appwrite
     Android -->|"POST /calculate-offer"| BRE
     Android -->|"Structured parsing"| Gemini
-    Firebase -->|"Email OTP"| Brevo
+    Firebase -->|"Cloud-to-Cloud OTP Trigger"| Brevo
 ```
 
 <details>
@@ -84,9 +86,9 @@ sequenceDiagram
     App->>App: Extract Structured Data (OCR + Gemini)
     User->>App: Confirm Obligations
     App->>BRE: POST /calculate-offer
-    Note over BRE: Evaluate Risk Rules
+    Note over BRE: Evaluate Risk Rules (FOIR, Bureau Score)
     BRE-->>App: Decision (APPROVED/REJECTED)
-    App->>User: Display Indicative Loan Offer
+    App->>User: Display Indicative Loan Offer & Key Fact Sheet
 ```
 
 </details>
@@ -96,11 +98,17 @@ sequenceDiagram
 ```text
 loansai/
 ├── apps/
-│   └── mobile-android/         # Kotlin Android Application
+│   └── mobile-android/         # Complete Native Kotlin Android Application
+│       ├── app/src/main/java/com/loansai/unassisted/
+│       │   ├── data/           # Repositories, Local DB (Room/DataStore), and API Clients (Retrofit)
+│       │   ├── domain/         # Clean Architecture Use Cases and Business Logic Interfaces
+│       │   ├── presentation/   # Jetpack Compose UI Screens, ViewModels, and Navigation
+│       │   └── util/           # Constants, AI Integration Helpers, and Security Interceptors
+│       └── build.gradle.kts    # App-level dependencies and build config
 ├── services/
-│   ├── bre-python/             # Python Flask Underwriting Engine
-│   ├── appwrite-admin-tools/   # Node.js setups for mock bureau databases
-│   └── firebase-support/       # Cloud Functions & Firestore utilities
+│   ├── bre-python/             # Python Flask Underwriting Engine (Risk matrices, FOIR logic)
+│   ├── appwrite-admin-tools/   # Node.js setups for mock bureau databases (Schemas, Data import scripts)
+│   └── firebase-support/       # Cloud Functions (TypeScript) & Firestore database state utilities
 ├── docs/                       # Detailed setup and reference guides
 │   ├── setup/                  
 │   └── reference/              
@@ -115,21 +123,25 @@ loansai/
 Follow these high-level steps to get the platform running locally. For detailed, component-specific instructions, see the respective guides in the `docs/setup` directory.
 
 ### Prerequisites
-*   Android Studio (Latest)
+*   Android Studio (Latest Release Recommended)
 *   Python 3.10+
 *   Node.js v18+
 *   Firebase Project & Appwrite Instance (Cloud or Self-Hosted)
 
 ### Step-by-Step Setup
 
-1.  **Backend Services**: 
+1.  **Backend Services Initialization**: 
     *   Initialize Firebase ([Guide](./docs/setup/firebase-backend.md)).
     *   Configure Appwrite collections & import mock data ([Guide](./docs/setup/appwrite-admin-tools.md)).
     *   Start the Python BRE service locally ([Guide](./docs/setup/bre-python.md)).
-2.  **Mobile App**:
-    *   Open `apps/mobile-android` in Android Studio.
-    *   Configure `keystore.properties` (see below) and add `google-services.json`.
-    *   Build and run on an emulator or physical device ([Guide](./docs/setup/build-and-install.md)).
+
+2.  **Mobile App Compilation (Android Studio)**:
+    *   Launch **Android Studio** and select *Open an existing project*.
+    *   Navigate to and select the `loansai/apps/mobile-android` directory. Allow Gradle to sync dependencies.
+    *   Create the required `keystore.properties` file in the root of the Android project (`apps/mobile-android/keystore.properties`) and populate it with your API keys (see Configuration section below).
+    *   Place your Firebase `google-services.json` file inside `apps/mobile-android/app/`.
+    *   Once Gradle sync is complete and errors resolve, select an Emulator (API 34+ recommended) or connect a physical device via ADB.
+    *   Click the **Run 'app'** button (Shift + F10) or execute `./gradlew assembleDebug` in the terminal to compile and install the application onto the device.
 
 ## 🔑 Configuration
 
